@@ -1,0 +1,75 @@
+# Task Queue
+#
+# Prioritized list of pending work. Update status as you progress.
+#
+# Format:
+#   id: unique task identifier
+#   title: brief description of deliverable
+#   priority: 1 (highest) to 5 (lowest)
+#   status: pending | in-progress | done | blocked
+#   deliverable: what constitutes completion (URL, file, test pass, etc.)
+#   blocked_reason: if status=blocked, explain why here (null otherwise)
+#
+# At session start:
+#   1. Read this file
+#   2. Pick highest priority task with status: pending
+#   3. Update status to in-progress
+#   4. After completion, set status to done with completed_date
+#
+# If blocked, update with blocked_reason and move to next task.
+
+tasks:
+  - id: task-001
+    title: "Setup project documentation"
+    priority: 1
+    status: "pending"
+    deliverable: "README.md created with setup instructions, CLAUDE.md in place"
+    blocked_reason: null
+    completed_date: null
+
+  - id: task-002
+    title: "Fix critical bug in authentication flow"
+    priority: 2
+    status: "pending"
+    deliverable: "Bug verified fixed, test passes, LESSONS.md documents the fix"
+    blocked_reason: null
+    completed_date: null
+
+  - id: task-003
+    title: "Publish v1.0 release"
+    priority: 3
+    status: "pending"
+    deliverable: "Release pushed to production, manifest updated, announcement sent"
+    blocked_reason: null
+    completed_date: null
+
+# Blocked Items
+#
+# When a task cannot proceed:
+# 1. Change status to blocked
+# 2. Fill in blocked_reason with specific issue
+# 3. Move to next highest-priority pending task
+# 4. Document what would unblock it
+#
+# Example blocked task:
+#   - id: task-004
+#     title: "Integration with external API"
+#     priority: 4
+#     status: "blocked"
+#     deliverable: "API credentials configured, sync working end-to-end"
+#     blocked_reason: "Waiting for API key from vendor (ticket #ABC-123, due 2026-03-15)"
+#     completed_date: null
+
+# Completed Tasks
+#
+# Move completed tasks to the bottom with completed_date filled in.
+# Keep them in the file for session history.
+#
+# Example completed task:
+#   - id: task-000
+#     title: "Example completed task"
+#     priority: 1
+#     status: "done"
+#     deliverable: "Deliverable achieved"
+#     blocked_reason: null
+#     completed_date: "2026-02-28"

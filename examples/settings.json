@@ -1,0 +1,105 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/settings-schema.json",
+
+  "_comment": [
+    "Example Claude Code settings.json showing how to wire up the hooks.",
+    "Copy relevant sections into your own ~/.claude/settings.json",
+    "Adjust paths to match where you placed the hooks directory.",
+    "",
+    "IMPORTANT: Replace /path/to/hooks with the actual path, e.g.:",
+    "  ~/.claude/hooks/context-monitor.sh",
+    "  ~/my-hooks/context-monitor.sh",
+    "  /home/yourname/.claude/hooks/context-monitor.sh"
+  ],
+
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/context-monitor.sh",
+            "_comment": "Monitor context window remaining capacity"
+          },
+          {
+            "type": "command",
+            "command": "/path/to/hooks/session-start-marker.sh",
+            "_comment": "Record session start time for proof-log"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/syntax-check.sh",
+            "_comment": "Auto syntax validation after edits"
+          },
+          {
+            "type": "command",
+            "command": "/path/to/hooks/activity-logger.sh",
+            "_comment": "Log file changes to JSONL"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/cdp-safety-check.sh",
+            "_comment": "Block raw WebSocket CDP construction"
+          },
+          {
+            "type": "command",
+            "command": "/path/to/hooks/branch-guard.sh",
+            "_comment": "Block pushes to main/master branches"
+          },
+          {
+            "type": "command",
+            "command": "/path/to/hooks/error-gate.sh",
+            "_comment": "Block external actions when unresolved errors exist"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/decision-warn.sh",
+            "_comment": "Warn on edits to monitored paths"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/proof-log-session.sh",
+            "_comment": "Generate session summary on exit"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/proof-log-session.sh",
+            "_comment": "Generate summary before context compaction"
+          }
+        ]
+      }
+    ]
+  }
+}

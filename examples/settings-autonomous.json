@@ -1,0 +1,95 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/settings-schema.json",
+
+  "_comment": [
+    "Full autonomous setup: all hooks enabled.",
+    "Designed for unattended/headless Claude Code operation.",
+    "Includes no-ask-human.sh to prevent the agent from asking",
+    "questions that no one is there to answer."
+  ],
+
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/context-monitor.sh"
+          },
+          {
+            "type": "command",
+            "command": "/path/to/hooks/session-start-marker.sh"
+          },
+          {
+            "type": "command",
+            "command": "/path/to/hooks/no-ask-human.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/syntax-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "/path/to/hooks/activity-logger.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/cdp-safety-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "/path/to/hooks/branch-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": "/path/to/hooks/error-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/decision-warn.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/proof-log-session.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/proof-log-session.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

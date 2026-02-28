@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/settings-schema.json",
+
+  "_comment": [
+    "Minimal setup: just context monitoring and syntax checking.",
+    "Good starting point if you want to try the hooks gradually."
+  ],
+
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/context-monitor.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/hooks/syntax-check.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
