@@ -1,4 +1,4 @@
-# Claude Code Ops Kit v2.0
+# claude-code-hooks
 
 **10 hooks + 5 templates from 108 hours of autonomous Claude Code operation.**
 
@@ -214,6 +214,20 @@ Detects question patterns and reminds the agent to decide autonomously. Essentia
 - **bash** + **jq**
 - **python3** (used by activity-logger, proof-log, context-monitor)
 - **Optional:** PyYAML (YAML syntax checking), Node.js (JS syntax checking)
+
+---
+
+## Related Tools
+
+| Tool | What it does |
+|------|-------------|
+| [cc-health-check](https://github.com/yurukusa/cc-health-check) | Diagnose your setup — find what's missing |
+| [cc-session-stats](https://github.com/yurukusa/cc-session-stats) | How much are you using AI? |
+| [cc-audit-log](https://github.com/yurukusa/cc-audit-log) | What did your AI do? |
+| [cc-roast](https://yurukusa.github.io/cc-roast/) | Your CLAUDE.md, brutally reviewed |
+| **claude-code-hooks** | Fix what's missing — hooks and templates |
+
+Run cc-health-check first to see your score, then use this kit to fix what's missing.
 
 ---
 
