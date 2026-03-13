@@ -1,5 +1,7 @@
 # claude-code-hooks
 
+[![GitHub stars](https://img.shields.io/github/stars/yurukusa/claude-code-hooks?style=social)](https://github.com/yurukusa/claude-code-hooks)
+
 **10 hooks + 5 templates from 108 hours of autonomous Claude Code operation.**
 
 Production infrastructure for running Claude Code autonomously. Every hook exists because something went wrong without it. Every template encodes a workflow pattern that survived real-world autonomous operation.
