@@ -233,6 +233,20 @@ Run cc-health-check first to see your score, then use this kit to fix what's mis
 
 ---
 
+## Want it all set up in 15 minutes?
+
+**[Claude Code Ops Kit](https://yurukusa.gumroad.com/l/pkbbl?utm_source=github&utm_medium=readme&utm_campaign=ops-kit)** ($19) — Everything above, pre-configured and ready to deploy:
+
+- All 10 hooks + **2 bonus hooks** (git-auto-backup, session-saver)
+- 5 templates
+- **3 exclusive tools** (watchdog, CLAUDE.md generator, risk-score)
+- **`install.sh`** — one command, done
+- 3 settings presets (minimal / recommended / autonomous)
+
+> Free version = parts. Ops Kit = assembled, tested, ready to run.
+
+---
+
 ## License
 
 MIT License.
