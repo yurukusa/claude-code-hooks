@@ -1,0 +1,235 @@
+#!/bin/bash
+# cc-solo-watchdog: Monitor a solo Claude Code tmux session.
+# Detects idle/frozen states and nudges CC to continue working.
+#
+# Usage:
+#   cc-solo-watchdog                   # Run in foreground
+#   cc-solo-watchdog --start           # Run in background (daemonized)
+#   cc-solo-watchdog --status          # Show status
+#   cc-solo-watchdog --stop            # Stop background watchdog
+#   cc-solo-watchdog --once            # Single check, then exit
+#
+# Why: Claude Code can stop responding — idle after task completion,
+# frozen in a loop, or stuck waiting for input that won't come.
+# This watchdog detects those states and sends a nudge to keep CC moving.
+
+set -euo pipefail
+
+# ─── Configuration ───
+SESSION="${CC_SESSION:-cc-loop}"     # tmux session name
+PANE="${CC_PANE:-0}"                 # tmux pane index
+IDLE_THRESHOLD="${CC_IDLE_SEC:-300}" # seconds of no output = idle (default: 5 min)
+INTERVAL="${CC_INTERVAL:-60}"        # check interval in seconds
+NUDGE_MSG="${CC_NUDGE_MSG:-Continue working on the next task from mission.md or task-queue.yaml.}"
+
+STATE_DIR="$HOME/.cache/cc-solo-watchdog"
+PID_FILE="$STATE_DIR/watchdog.pid"
+LOG_FILE="$STATE_DIR/watchdog.log"
+LAST_ACTIVITY="$STATE_DIR/last-activity.txt"
+
+ONCE=0
+START_BG=0
+QUIET=0
+
+usage() {
+  cat <<'EOF'
+Usage: cc-solo-watchdog [options]
+
+Monitors a Claude Code tmux session for idle/frozen states.
+Sends a nudge message when CC has been inactive too long.
+
+Options:
+  --once              Single health check, then exit
+  --start             Start watchdog in background
+  --status            Show watchdog status
+  --stop              Stop background watchdog
+  --interval N        Check interval seconds (default: 60)
+  --idle-threshold N  Seconds of inactivity before nudge (default: 300)
+  --session NAME      tmux session name (default: cc-loop)
+  --pane N            tmux pane index (default: 0)
+  --nudge-msg TEXT    Message to send on idle detection
+  --quiet             Suppress non-error stdout
+  -h, --help          Show this help
+
+Environment overrides:
+  CC_SESSION, CC_PANE, CC_IDLE_SEC, CC_INTERVAL, CC_NUDGE_MSG
+EOF
+}
+
+log() {
+  local msg="[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+  mkdir -p "$STATE_DIR"
+  echo "$msg" >> "$LOG_FILE"
+  if (( QUIET == 0 )); then echo "$msg"; fi
+}
+
+err() {
+  local msg="[$(date '+%Y-%m-%d %H:%M:%S')] ERR: $*"
+  mkdir -p "$STATE_DIR"
+  echo "$msg" >> "$LOG_FILE"
+  echo "$msg" >&2
+}
+
+# ─── Core: detect activity ───
+# Capture pane content hash to detect changes between checks.
+get_pane_hash() {
+  tmux capture-pane -t "${SESSION}:0.${PANE}" -p 2>/dev/null | md5sum | cut -d' ' -f1
+}
+
+update_activity() {
+  mkdir -p "$STATE_DIR"
+  echo "$(date +%s) $(get_pane_hash)" > "$LAST_ACTIVITY"
+}
+
+seconds_since_activity() {
+  if [[ ! -f "$LAST_ACTIVITY" ]]; then
+    update_activity
+    echo "0"
+    return
+  fi
+
+  local last_ts last_hash current_hash now
+  read -r last_ts last_hash < "$LAST_ACTIVITY" 2>/dev/null || true
+  last_ts="${last_ts:-$(date +%s)}"
+  last_hash="${last_hash:-none}"
+  current_hash="$(get_pane_hash)"
+  now="$(date +%s)"
+
+  if [[ "$current_hash" != "$last_hash" ]]; then
+    # Pane content changed — CC is active
+    update_activity
+    echo "0"
+  else
+    echo "$(( now - last_ts ))"
+  fi
+}
+
+# ─── Core: nudge ───
+nudge_cc() {
+  log "NUDGE: idle ${1}s > threshold ${IDLE_THRESHOLD}s — sending nudge"
+  # Send the nudge message as if typed by user
+  tmux send-keys -t "${SESSION}:0.${PANE}" "$NUDGE_MSG" C-m 2>/dev/null || {
+    err "failed to send nudge to ${SESSION}:0.${PANE}"
+    return 1
+  }
+  update_activity
+}
+
+# ─── Health check ───
+health_check() {
+  # 1. Session exists?
+  if ! tmux has-session -t "$SESSION" 2>/dev/null; then
+    err "session '$SESSION' not found"
+    return 1
+  fi
+
+  # 2. Pane exists?
+  if ! tmux list-panes -t "${SESSION}:0" -F "#{pane_index}" 2>/dev/null | grep -q "^${PANE}$"; then
+    err "pane ${PANE} not found in ${SESSION}"
+    return 1
+  fi
+
+  # 3. Check idle duration
+  local idle
+  idle="$(seconds_since_activity)"
+
+  if (( idle >= IDLE_THRESHOLD )); then
+    nudge_cc "$idle"
+  else
+    log "ok: session=${SESSION} pane=${PANE} idle=${idle}s"
+  fi
+}
+
+# ─── Daemon management ───
+start_bg() {
+  mkdir -p "$STATE_DIR"
+  if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    echo "watchdog already running: pid=$(cat "$PID_FILE")"
+    return 0
+  fi
+  nohup "$0" --interval "$INTERVAL" --idle-threshold "$IDLE_THRESHOLD" \
+    --session "$SESSION" --pane "$PANE" --quiet >> "$LOG_FILE" 2>&1 &
+  echo "$!" > "$PID_FILE"
+  echo "watchdog started: pid=$! log=$LOG_FILE"
+}
+
+stop_bg() {
+  if [[ ! -f "$PID_FILE" ]]; then
+    echo "watchdog not running"
+    return 0
+  fi
+  local pid
+  pid="$(cat "$PID_FILE")"
+  if kill -0 "$pid" 2>/dev/null; then
+    kill "$pid"
+    echo "watchdog stopped: pid=$pid"
+  else
+    echo "watchdog pid stale: pid=$pid"
+  fi
+  rm -f "$PID_FILE"
+}
+
+show_status() {
+  local wd="stopped"
+  if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    wd="running pid=$(cat "$PID_FILE")"
+  fi
+
+  local sess="missing"
+  if tmux has-session -t "$SESSION" 2>/dev/null; then
+    sess="alive"
+  fi
+
+  local idle="unknown"
+  if [[ -f "$LAST_ACTIVITY" ]]; then
+    local last_ts
+    read -r last_ts _ < "$LAST_ACTIVITY" 2>/dev/null || true
+    if [[ -n "$last_ts" ]]; then
+      idle="$(( $(date +%s) - last_ts ))s"
+    fi
+  fi
+
+  echo "watchdog=$wd"
+  echo "session=${SESSION} status=${sess}"
+  echo "idle=${idle} threshold=${IDLE_THRESHOLD}s"
+  echo "interval=${INTERVAL}s"
+}
+
+# ─── Parse args ───
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --once) ONCE=1; shift ;;
+    --start) START_BG=1; shift ;;
+    --status) show_status; exit 0 ;;
+    --stop) stop_bg; exit 0 ;;
+    --interval) INTERVAL="${2:-60}"; shift 2 ;;
+    --idle-threshold) IDLE_THRESHOLD="${2:-300}"; shift 2 ;;
+    --session) SESSION="${2:-cc-loop}"; shift 2 ;;
+    --pane) PANE="${2:-0}"; shift 2 ;;
+    --nudge-msg) NUDGE_MSG="${2:-}"; shift 2 ;;
+    --quiet) QUIET=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "unknown option: $1" >&2; exit 2 ;;
+  esac
+done
+
+if (( START_BG == 1 )); then
+  start_bg
+  exit 0
+fi
+
+if (( ONCE == 1 )); then
+  health_check
+  exit 0
+fi
+
+# ─── Main loop ───
+mkdir -p "$STATE_DIR"
+echo "$$" > "$PID_FILE"
+trap 'rm -f "$PID_FILE"' EXIT
+
+log "watchdog started: session=${SESSION} pane=${PANE} idle_threshold=${IDLE_THRESHOLD}s interval=${INTERVAL}s"
+while true; do
+  health_check || true
+  sleep "$INTERVAL"
+done
