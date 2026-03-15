@@ -23,7 +23,7 @@ Major expansion: from 8 hooks to 10 hooks + 5 operational templates. Now covers 
 
 ## 1.0.0 — 2026-02-28
 
-Initial release. All hooks extracted from a production autonomous Claude Code system with 108 hours of runtime.
+Initial release. All hooks extracted from a production autonomous Claude Code system with 140+ hours of runtime.
 
 ### Hooks included:
 - **context-monitor.sh** — Context window capacity monitoring with graduated warnings
