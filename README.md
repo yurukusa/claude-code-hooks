@@ -219,6 +219,34 @@ Detects question patterns and reminds the agent to decide autonomously. Essentia
 
 ---
 
+## Troubleshooting
+
+**Hooks not firing?**
+
+1. **Use absolute paths** in your hook commands. Relative paths break depending on which directory you start Claude Code from:
+   ```json
+   "command": "bash ~/.claude/hooks/syntax-check.sh"
+   ```
+
+2. **Test your hook in isolation** before relying on it:
+   ```bash
+   echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}' | bash ~/.claude/hooks/decision-warn.sh
+   echo $?  # Should print 2 (blocked) for dangerous commands
+   ```
+
+3. **Check the timeout.** Hooks have a 5-second timeout by default. If your script does anything slow (network calls, large file scans), it may silently time out and Claude proceeds as if it passed.
+
+4. **Verify permissions:** `chmod +x hooks/*.sh` — hooks must be executable.
+
+5. **VS Code extension:** Hooks configured in settings.json may not fire in the VS Code extension. Test with the CLI first: `claude` from terminal.
+
+6. **Exit codes matter:**
+   - `exit 0` = allow (hook passed)
+   - `exit 2` = hard block (command never runs — Claude cannot override this)
+   - Any stderr output on exit 2 is shown to Claude as the reason
+
+---
+
 ## Related Tools
 
 | Tool | What it does |
