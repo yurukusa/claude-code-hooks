@@ -1,235 +1,549 @@
 #!/bin/bash
-# cc-solo-watchdog: Monitor a solo Claude Code tmux session.
-# Detects idle/frozen states and nudges CC to continue working.
+# cc-solo-watchdog: CCが一人で自律ループするためのウォッチドッグ
 #
-# Usage:
-#   cc-solo-watchdog                   # Run in foreground
-#   cc-solo-watchdog --start           # Run in background (daemonized)
-#   cc-solo-watchdog --status          # Show status
-#   cc-solo-watchdog --stop            # Stop background watchdog
-#   cc-solo-watchdog --once            # Single check, then exit
+# 目的:
+#   CCがアイドル状態（画面無変化）になったとき、ミッションを思い出させて
+#   次のタスクに取り組むよう促す。Codex不要。CC単独で動く。
 #
-# Why: Claude Code can stop responding — idle after task completion,
-# frozen in a loop, or stuck waiting for input that won't come.
-# This watchdog detects those states and sends a nudge to keep CC moving.
+# 設計思想:
+#   - CCのセッションを殺さない（コンテキスト保持）
+#   - 代わりにnudge（テキスト送信）で「起きて、次やって」と促す
+#   - mission.mdとtask-queueから次タスクを取得してプロンプトに含める
+#   - モードファイルで制御: ~/cc_solo_loop.enabled
+#   - レート制限なし。代わりに指数バックオフ（nudge後に復帰しなければ間隔を倍に）
+#   - ビジー検知: claudeの子プロセスが動いていたらidleと判定しない
+#
+# 使い方:
+#   cc-solo-watchdog             # フォアグラウンド実行
+#   cc-solo-watchdog --bg        # バックグラウンド実行（tmux内推奨）
+#   cc-solo-watchdog --stop      # 停止
+#   cc-solo-watchdog --status    # 状態確認
+#
+# 前提:
+#   - CCがtmuxセッション "cc" で動いている
+#   - ~/cc_solo_loop.enabled が存在する
 
-set -euo pipefail
+set -uo pipefail
 
-# ─── Configuration ───
-SESSION="${CC_SESSION:-cc-loop}"     # tmux session name
-PANE="${CC_PANE:-0}"                 # tmux pane index
-IDLE_THRESHOLD="${CC_IDLE_SEC:-300}" # seconds of no output = idle (default: 5 min)
-INTERVAL="${CC_INTERVAL:-60}"        # check interval in seconds
-NUDGE_MSG="${CC_NUDGE_MSG:-Continue working on the next task from mission.md or task-queue.yaml.}"
-
+# === 設定 ===
+MODE_FILE="$HOME/cc_solo_loop.enabled"
+TMUX_SESSION="${CC_SOLO_SESSION:-cc}"
 STATE_DIR="$HOME/.cache/cc-solo-watchdog"
 PID_FILE="$STATE_DIR/watchdog.pid"
 LOG_FILE="$STATE_DIR/watchdog.log"
-LAST_ACTIVITY="$STATE_DIR/last-activity.txt"
+NUDGE_LOG="$STATE_DIR/nudge-history.jsonl"
 
-ONCE=0
+# タイミング
+CHECK_INTERVAL=15          # 秒。画面チェック間隔
+IDLE_THRESHOLD=120         # 秒。この時間画面無変化 → nudge送信
+NUDGE_COOLDOWN=120         # 秒。nudge送信後、最低この時間は再送しない（初回）
+MAX_BACKOFF=1800           # 秒。バックオフ上限（30分）
+
+# === 引数解析 ===
 START_BG=0
-QUIET=0
+STOP=0
+STATUS=0
 
-usage() {
-  cat <<'EOF'
-Usage: cc-solo-watchdog [options]
-
-Monitors a Claude Code tmux session for idle/frozen states.
-Sends a nudge message when CC has been inactive too long.
-
-Options:
-  --once              Single health check, then exit
-  --start             Start watchdog in background
-  --status            Show watchdog status
-  --stop              Stop background watchdog
-  --interval N        Check interval seconds (default: 60)
-  --idle-threshold N  Seconds of inactivity before nudge (default: 300)
-  --session NAME      tmux session name (default: cc-loop)
-  --pane N            tmux pane index (default: 0)
-  --nudge-msg TEXT    Message to send on idle detection
-  --quiet             Suppress non-error stdout
-  -h, --help          Show this help
-
-Environment overrides:
-  CC_SESSION, CC_PANE, CC_IDLE_SEC, CC_INTERVAL, CC_NUDGE_MSG
-EOF
-}
-
-log() {
-  local msg="[$(date '+%Y-%m-%d %H:%M:%S')] $*"
-  mkdir -p "$STATE_DIR"
-  echo "$msg" >> "$LOG_FILE"
-  if (( QUIET == 0 )); then echo "$msg"; fi
-}
-
-err() {
-  local msg="[$(date '+%Y-%m-%d %H:%M:%S')] ERR: $*"
-  mkdir -p "$STATE_DIR"
-  echo "$msg" >> "$LOG_FILE"
-  echo "$msg" >&2
-}
-
-# ─── Core: detect activity ───
-# Capture pane content hash to detect changes between checks.
-get_pane_hash() {
-  tmux capture-pane -t "${SESSION}:0.${PANE}" -p 2>/dev/null | md5sum | cut -d' ' -f1
-}
-
-update_activity() {
-  mkdir -p "$STATE_DIR"
-  echo "$(date +%s) $(get_pane_hash)" > "$LAST_ACTIVITY"
-}
-
-seconds_since_activity() {
-  if [[ ! -f "$LAST_ACTIVITY" ]]; then
-    update_activity
-    echo "0"
-    return
-  fi
-
-  local last_ts last_hash current_hash now
-  read -r last_ts last_hash < "$LAST_ACTIVITY" 2>/dev/null || true
-  last_ts="${last_ts:-$(date +%s)}"
-  last_hash="${last_hash:-none}"
-  current_hash="$(get_pane_hash)"
-  now="$(date +%s)"
-
-  if [[ "$current_hash" != "$last_hash" ]]; then
-    # Pane content changed — CC is active
-    update_activity
-    echo "0"
-  else
-    echo "$(( now - last_ts ))"
-  fi
-}
-
-# ─── Core: nudge ───
-nudge_cc() {
-  log "NUDGE: idle ${1}s > threshold ${IDLE_THRESHOLD}s — sending nudge"
-  # Send the nudge message as if typed by user
-  tmux send-keys -t "${SESSION}:0.${PANE}" "$NUDGE_MSG" C-m 2>/dev/null || {
-    err "failed to send nudge to ${SESSION}:0.${PANE}"
-    return 1
-  }
-  update_activity
-}
-
-# ─── Health check ───
-health_check() {
-  # 1. Session exists?
-  if ! tmux has-session -t "$SESSION" 2>/dev/null; then
-    err "session '$SESSION' not found"
-    return 1
-  fi
-
-  # 2. Pane exists?
-  if ! tmux list-panes -t "${SESSION}:0" -F "#{pane_index}" 2>/dev/null | grep -q "^${PANE}$"; then
-    err "pane ${PANE} not found in ${SESSION}"
-    return 1
-  fi
-
-  # 3. Check idle duration
-  local idle
-  idle="$(seconds_since_activity)"
-
-  if (( idle >= IDLE_THRESHOLD )); then
-    nudge_cc "$idle"
-  else
-    log "ok: session=${SESSION} pane=${PANE} idle=${idle}s"
-  fi
-}
-
-# ─── Daemon management ───
-start_bg() {
-  mkdir -p "$STATE_DIR"
-  if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-    echo "watchdog already running: pid=$(cat "$PID_FILE")"
-    return 0
-  fi
-  nohup "$0" --interval "$INTERVAL" --idle-threshold "$IDLE_THRESHOLD" \
-    --session "$SESSION" --pane "$PANE" --quiet >> "$LOG_FILE" 2>&1 &
-  echo "$!" > "$PID_FILE"
-  echo "watchdog started: pid=$! log=$LOG_FILE"
-}
-
-stop_bg() {
-  if [[ ! -f "$PID_FILE" ]]; then
-    echo "watchdog not running"
-    return 0
-  fi
-  local pid
-  pid="$(cat "$PID_FILE")"
-  if kill -0 "$pid" 2>/dev/null; then
-    kill "$pid"
-    echo "watchdog stopped: pid=$pid"
-  else
-    echo "watchdog pid stale: pid=$pid"
-  fi
-  rm -f "$PID_FILE"
-}
-
-show_status() {
-  local wd="stopped"
-  if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-    wd="running pid=$(cat "$PID_FILE")"
-  fi
-
-  local sess="missing"
-  if tmux has-session -t "$SESSION" 2>/dev/null; then
-    sess="alive"
-  fi
-
-  local idle="unknown"
-  if [[ -f "$LAST_ACTIVITY" ]]; then
-    local last_ts
-    read -r last_ts _ < "$LAST_ACTIVITY" 2>/dev/null || true
-    if [[ -n "$last_ts" ]]; then
-      idle="$(( $(date +%s) - last_ts ))s"
-    fi
-  fi
-
-  echo "watchdog=$wd"
-  echo "session=${SESSION} status=${sess}"
-  echo "idle=${idle} threshold=${IDLE_THRESHOLD}s"
-  echo "interval=${INTERVAL}s"
-}
-
-# ─── Parse args ───
 while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --once) ONCE=1; shift ;;
-    --start) START_BG=1; shift ;;
-    --status) show_status; exit 0 ;;
-    --stop) stop_bg; exit 0 ;;
-    --interval) INTERVAL="${2:-60}"; shift 2 ;;
-    --idle-threshold) IDLE_THRESHOLD="${2:-300}"; shift 2 ;;
-    --session) SESSION="${2:-cc-loop}"; shift 2 ;;
-    --pane) PANE="${2:-0}"; shift 2 ;;
-    --nudge-msg) NUDGE_MSG="${2:-}"; shift 2 ;;
-    --quiet) QUIET=1; shift ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "unknown option: $1" >&2; exit 2 ;;
-  esac
+    case "$1" in
+        --bg) START_BG=1 ;;
+        --stop) STOP=1 ;;
+        --status) STATUS=1 ;;
+        --idle) IDLE_THRESHOLD="$2"; shift ;;
+        --session) TMUX_SESSION="$2"; shift ;;
+        -h|--help)
+            cat << 'EOF'
+cc-solo-watchdog: CCが一人で自律ループするためのウォッチドッグ
+
+Usage:
+  cc-solo-watchdog             フォアグラウンド実行
+  cc-solo-watchdog --bg        バックグラウンド（nohup）
+  cc-solo-watchdog --stop      停止
+  cc-solo-watchdog --status    状態確認
+  cc-solo-watchdog --idle N    アイドル閾値（秒、デフォルト120）
+
+モードファイル:
+  touch ~/cc_solo_loop.enabled   → 有効化
+  rm ~/cc_solo_loop.enabled      → 無効化（次のチェックで停止）
+EOF
+            exit 0
+            ;;
+        *) echo "Unknown option: $1"; exit 1 ;;
+    esac
+    shift
 done
 
-if (( START_BG == 1 )); then
-  start_bg
-  exit 0
-fi
-
-if (( ONCE == 1 )); then
-  health_check
-  exit 0
-fi
-
-# ─── Main loop ───
 mkdir -p "$STATE_DIR"
-echo "$$" > "$PID_FILE"
-trap 'rm -f "$PID_FILE"' EXIT
 
-log "watchdog started: session=${SESSION} pane=${PANE} idle_threshold=${IDLE_THRESHOLD}s interval=${INTERVAL}s"
+# === ユーティリティ ===
+log() {
+    local ts
+    ts=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "[$ts] $*" >> "$LOG_FILE"
+    if [ $START_BG -eq 0 ]; then
+        echo "[$ts] $*"
+    fi
+}
+
+# === --stop ===
+if [ $STOP -eq 1 ]; then
+    if [ -f "$PID_FILE" ]; then
+        local_pid=$(cat "$PID_FILE")
+        if kill -0 "$local_pid" 2>/dev/null; then
+            kill "$local_pid"
+            rm -f "$PID_FILE"
+            echo "Watchdog stopped (PID $local_pid)"
+        else
+            rm -f "$PID_FILE"
+            echo "Watchdog was not running (stale PID)"
+        fi
+    else
+        echo "No PID file found"
+    fi
+    exit 0
+fi
+
+# === --status ===
+if [ $STATUS -eq 1 ]; then
+    echo "=== CC Solo Watchdog Status ==="
+    echo "Mode file: $([ -f "$MODE_FILE" ] && echo 'ENABLED' || echo 'DISABLED')"
+    if [ -f "$PID_FILE" ]; then
+        local_pid=$(cat "$PID_FILE")
+        if kill -0 "$local_pid" 2>/dev/null; then
+            echo "Process: RUNNING (PID $local_pid)"
+        else
+            echo "Process: DEAD (stale PID $local_pid)"
+        fi
+    else
+        echo "Process: NOT RUNNING"
+    fi
+    if [ -f "$NUDGE_LOG" ]; then
+        last_nudge=$(tail -1 "$NUDGE_LOG" 2>/dev/null || echo "none")
+        echo "Last nudge: $last_nudge"
+        count_1h=$(awk -v cutoff="$(date -d '1 hour ago' +%s 2>/dev/null || echo 0)" \
+            'BEGIN{c=0} {if($0 ~ /"epoch":/) { match($0, /"epoch":([0-9]+)/, a); if(a[1]>cutoff) c++}} END{print c}' \
+            "$NUDGE_LOG" 2>/dev/null || echo "?")
+        echo "Nudges (last 1h): $count_1h"
+    else
+        echo "No nudge history"
+    fi
+    # バックオフ状態ファイルがあれば表示
+    if [ -f "$STATE_DIR/backoff_cooldown" ]; then
+        echo "Current backoff: $(cat "$STATE_DIR/backoff_cooldown")s"
+    fi
+    exit 0
+fi
+
+# === バックグラウンド起動 ===
+if [ $START_BG -eq 1 ]; then
+    # 既存プロセスをPIDファイルから止める（pkill -f は自分自身も殺すので使わない）
+    if [ -f "$PID_FILE" ]; then
+        old_pid=$(cat "$PID_FILE")
+        kill "$old_pid" 2>/dev/null || true
+        rm -f "$PID_FILE"
+        sleep 0.5
+    fi
+    nohup "$0" > /dev/null 2>&1 &
+    echo $! > "$PID_FILE"
+    echo "Watchdog started in background (PID $!)"
+    exit 0
+fi
+
+# === 重複起動防止（自分自身のPIDは除外: --bg経由で起動された場合に誤検知する問題を防ぐ）===
+if [ -f "$PID_FILE" ]; then
+    old_pid=$(cat "$PID_FILE")
+    if [ "$old_pid" != "$$" ] && kill -0 "$old_pid" 2>/dev/null; then
+        echo "Watchdog already running (PID $old_pid). Use --stop first."
+        exit 1
+    fi
+fi
+echo $$ > "$PID_FILE"
+trap 'rm -f "$PID_FILE" "$STATE_DIR/backoff_cooldown"; log "Watchdog terminated."; exit 0' EXIT INT TERM
+
+log "=== CC Solo Watchdog 起動 ==="
+log "IDLE_THRESHOLD=${IDLE_THRESHOLD}s, NUDGE_COOLDOWN=${NUDGE_COOLDOWN}s, MAX_BACKOFF=${MAX_BACKOFF}s"
+log "MODE_FILE=$MODE_FILE"
+
+# === 起動通知（tmux経由でClaudeに送信） ===
+startup_ts=$(date '+%Y-%m-%d %H:%M JST')
+startup_msg="[Watchdog 再稼働 / ${startup_ts} / PID $$] idle ${IDLE_THRESHOLD}s検知で自動nudge開始"
+tmux send-keys -t "$TMUX_SESSION" Escape 2>/dev/null
+sleep 0.3
+tmux send-keys -l -t "$TMUX_SESSION" "$startup_msg"
+sleep 0.3
+tmux send-keys -t "$TMUX_SESSION" Enter
+log "Startup notification sent: $startup_msg"
+
+# === 次タスクを取得 ===
+get_next_task() {
+    # task-queue CLIから次のタスクを取得
+    if command -v task-queue >/dev/null 2>&1; then
+        task-queue next 2>/dev/null | head -5
+    else
+        echo "（task-queue CLI未検出）"
+    fi
+}
+
+# === ビジー検知: claudeが一時的なコマンドを実行中か ===
+# なぜ: 長いbashコマンド（PowerShell, API呼び出し等）実行中は画面が動かないが、
+#        実際にはビジー。これをidleと誤判定すると無駄nudgeでバックオフ枠を消費する。
+# 注意: MCPサーバー（node）等の常駐子プロセスは除外する。
+#        常駐プロセスを含めると is_cc_busy() が常にtrueを返し、idle検知が永遠に動かない。
+is_cc_busy() {
+    local pane_pid
+    pane_pid=$(tmux list-panes -t "$TMUX_SESSION" -F '#{pane_pid}' 2>/dev/null | head -1)
+    [ -z "$pane_pid" ] && return 1
+
+    # claudeプロセスのPIDを取得
+    local claude_pid
+    claude_pid=$(pgrep -P "$pane_pid" -f "claude" 2>/dev/null | head -1)
+    [ -z "$claude_pid" ] && return 1
+
+    # claudeの子プロセスから常駐プロセスを除外して、一時的なコマンド実行を検知
+    # 除外: node（MCPサーバー）、deno（MCPサーバー）
+    # 検知: bash, python, powershell, curl, git 等の一時コマンド
+    local transient_children
+    transient_children=$(pgrep -P "$claude_pid" 2>/dev/null | while read -r cpid; do
+        cmd=$(ps -p "$cpid" -o comm= 2>/dev/null)
+        case "$cmd" in
+            node|deno) ;; # MCP常駐プロセス → 除外
+            *) echo "$cpid" ;;
+        esac
+    done | head -1)
+    [ -n "$transient_children" ] && return 0
+
+    return 1
+}
+
+# === nudgeメッセージを構築 ===
+# 設計原則:
+#   1. 今から5分でできる「次の1アクション」を具体的に示す
+#   2. KPIは数字のみ（哲学・ルールは CLAUDE.md に書いてある。繰り返すな）
+#   3. pending_for_human 件数を常に表示（ぐらす依存タスクの自覚を持つ）
+#   4. mission.md のコピペ禁止（staleな情報で間違った方向に走る）
+build_nudge() {
+    local today
+    today=$(date '+%Y-%m-%d %H:%M JST')
+
+    # KPI: daily-*.yaml（kpi-collect出力）+ content-manifest.yaml から取得
+    local revenue_kpi
+    revenue_kpi=$(python3 -c "
+import yaml, os, glob
+try:
+    # 最新のdaily metricsファイルからPV/likes集計
+    metrics_dir = os.path.expanduser('~/ops/metrics')
+    daily_files = sorted(glob.glob(os.path.join(metrics_dir, 'daily-*.yaml')))
+    metrics_date = 'no data'
+    total_views = 0
+    total_likes = 0
+    if daily_files:
+        with open(daily_files[-1]) as f:
+            d = yaml.safe_load(f)
+        metrics_date = d.get('date', '?')
+        for pf, pf_data in d.get('platforms', {}).items():
+            for a in pf_data.get('articles', []):
+                v = a.get('views')
+                if isinstance(v, (int, float)):
+                    total_views += int(v)
+                l = a.get('likes')
+                if isinstance(l, (int, float)):
+                    total_likes += int(l)
+    # manifest からpublished/ready数
+    with open(os.path.expanduser('~/content-manifest.yaml')) as f:
+        m = yaml.safe_load(f)
+    published = sum(1 for v in m.values() if isinstance(v,dict) and v.get('status')=='published')
+    ready = sum(1 for v in m.values() if isinstance(v,dict) and v.get('status')=='ready')
+    print(f'[{metrics_date}] {total_views} views | {total_likes} likes | {published}本 published | {ready}本 ready')
+except Exception as e:
+    print(f'KPI取得エラー: {e}')
+" 2>/dev/null || echo "KPI取得失敗")
+
+    # 最優先アクションを1つ決める: 投稿期限 > ready未出荷 > 探索
+    local next_action=""
+
+    # 1. 今日の投稿候補（scheduled_date <= today AND status=ready）
+    local today_post
+    today_post=$(task-check 2>/dev/null | grep -m1 -E "^\s+\[" | sed 's/^[[:space:]]*//' | head -c 120)
+    if [ -n "$today_post" ]; then
+        next_action="→ POST NOW: ${today_post}"
+    else
+        # 2. ready状態の未投稿記事があるか
+        local ready_post
+        ready_post=$(python3 -c "
+import yaml, os, datetime
+try:
+    with open(os.path.expanduser('~/content-manifest.yaml')) as f:
+        m = yaml.safe_load(f)
+    today = datetime.date.today()
+    for k, v in m.items():
+        if not isinstance(v, dict): continue
+        if v.get('status') != 'ready': continue
+        sd = v.get('scheduled_date')
+        if sd and sd > today: continue
+        title = v.get('title', k)[:50]
+        pf = v.get('platform', '?')
+        print(f'[{pf}] {title}')
+        break
+except: pass
+" 2>/dev/null)
+        if [ -n "$ready_post" ]; then
+            next_action="→ UNSHIPPED: ${ready_post} — /post-article で出荷"
+        else
+            # 3. 探索 or アイデア
+            next_action="→ EXPLORE: ~/ideas/ にアイデアメモ or cc-toolkit 新ツール企画"
+        fi
+    fi
+
+    # pending_for_human.md の件数
+    local pending_count
+    pending_count=$(sed -n '/^## ぐらす手動が必要/,/^## /{ /^### /p; }' "$HOME/ops/pending_for_human.md" 2>/dev/null | grep -cv '~~' || echo 0)
+
+    local msg
+    msg="$(printf '[idle %ds / %s]\n%s\n%s' "$IDLE_THRESHOLD" "$today" "$revenue_kpi" "$next_action")"
+    [ "$pending_count" -gt 0 ] && msg="${msg}
+⚠ ぐらす待ち ${pending_count}件 — pending_for_human.md"
+
+    printf '%s\n' "$msg"
+}
+# === nudge送信 ===
+send_nudge() {
+    local message="$1"
+
+    # tmuxペインにテキスト送信
+    # まずEscape + C-c でバッファクリア、次にメッセージ入力
+    tmux send-keys -t "$TMUX_SESSION" Escape 2>/dev/null
+    sleep 0.3
+
+    # メッセージを一括送信してからEnter（分割送信するとCLIが途中で送信してしまう）
+    tmux send-keys -l -t "$TMUX_SESSION" "$message"
+    sleep 0.3
+    tmux send-keys -t "$TMUX_SESSION" Enter
+
+    # 送信ログ
+    local epoch
+    epoch=$(date +%s)
+    local ts
+    ts=$(date '+%Y-%m-%dT%H:%M:%S%z')
+    echo "{\"epoch\":${epoch},\"time\":\"${ts}\",\"type\":\"nudge\",\"backoff\":${current_cooldown}}" >> "$NUDGE_LOG"
+
+    log "NUDGE sent (backoff=${current_cooldown}s, $(echo "$message" | wc -c) bytes)"
+    return 0
+}
+
+# === APIエラー検知・自己回復 ===
+# なぜ: "Could not process image" 等のAPIエラーでCCがスタックし、
+#       人間の介入が必要になる問題を防ぐ（2026-03-10 事故）
+API_ERROR_THRESHOLD=3                  # この回数連続検知で介入
+api_error_count=0
+last_api_error_action=0
+
+detect_api_error() {
+    local pane_content
+    pane_content=$(tmux capture-pane -t "$TMUX_SESSION" -p -S -30 2>/dev/null)
+
+    # APIエラーパターンを検知
+    if echo "$pane_content" | grep -qE "API Error: [45][0-9]{2}|Could not process image|invalid_request_error"; then
+        return 0
+    fi
+    return 1
+}
+
+recover_from_api_error() {
+    local now
+    now=$(date +%s)
+
+    # 直近60秒以内にリカバリ済みなら2度打ちしない
+    if [ $((now - last_api_error_action)) -lt 60 ]; then
+        return
+    fi
+
+    # 画像エラーかどうか判定
+    # なぜ分岐するか: 画像エラーはテキスト送信では復旧不能。壊れた画像がコンテキストに残るため
+    #                /clear でコンテキストごと消す必要がある（2026-03-10 事故）
+    local pane_content
+    pane_content=$(tmux capture-pane -t "$TMUX_SESSION" -p -S -30 2>/dev/null)
+    local is_image_error=0
+    if echo "$pane_content" | grep -q 'Could not process image'; then
+        is_image_error=1
+    fi
+
+    if [ "$is_image_error" -eq 1 ]; then
+        # 画像エラー → /clear で復旧
+        image_clear_attempts=$((image_clear_attempts + 1))
+        log "IMAGE ERROR RECOVERY: /clear 試行 (${image_clear_attempts}回目)"
+
+        if [ "$image_clear_attempts" -ge 2 ]; then
+            # 2回目でも復旧しない → エスカレーション
+            log "FATAL: /clear 2回失敗。ループ停止。"
+            cat >> "$HOME/pending_for_human.md" << ESCALATE
+
+## 壊れた画像セッション死亡 ($(date '+%Y-%m-%d %H:%M JST'))
+- /clear 2回試行したが復旧せず
+- 手動で新セッション起動が必要
+ESCALATE
+            rm -f "$MODE_FILE"
+            image_clear_attempts=0
+            return
+        fi
+
+        tmux send-keys -t "$TMUX_SESSION" Escape 2>/dev/null
+        sleep 0.5
+        tmux send-keys -l -t "$TMUX_SESSION" "/clear"
+        sleep 0.3
+        tmux send-keys -t "$TMUX_SESSION" Enter
+        sleep 3
+        tmux send-keys -l -t "$TMUX_SESSION" "[auto-recovery] 壊れた画像でセッションが詰まっていたので /clear した。mission.md を読んで作業を再開せよ。"
+        sleep 0.3
+        tmux send-keys -t "$TMUX_SESSION" Enter
+    else
+        # 一般APIエラー → 既存のテキスト復旧
+        log "API ERROR RECOVERY: ${api_error_count}回連続検知。スキップ指示送信"
+        tmux send-keys -t "$TMUX_SESSION" C-c 2>/dev/null
+        sleep 1
+        local recovery_msg="[watchdog] APIエラーが${api_error_count}回連続しました。壊れた画像やリクエストをスキップして、次のタスクに進んでください。同じ操作をリトライしないでください。"
+        tmux send-keys -l -t "$TMUX_SESSION" "$recovery_msg"
+        sleep 0.3
+        tmux send-keys -t "$TMUX_SESSION" Enter
+    fi
+
+    last_api_error_action=$now
+    api_error_count=0
+
+    # ログ記録
+    local ts
+    ts=$(date '+%Y-%m-%dT%H:%M:%S%z')
+    local recovery_type="api_error_recovery"
+    [ "$is_image_error" -eq 1 ] && recovery_type="image_error_clear"
+    echo "{\"epoch\":${now},\"time\":\"${ts}\",\"type\":\"${recovery_type}\"}" >> "$NUDGE_LOG"
+
+    log "API ERROR RECOVERY: 回復処理完了 (type=${recovery_type})"
+}
+
+# === メインループ ===
+idle_since=0
+prev_hash=""
+last_nudge_epoch=0
+image_clear_attempts=0
+current_cooldown=$NUDGE_COOLDOWN      # 指数バックオフの現在値
+consecutive_nudges=0                   # 連続nudge回数（活動復帰でリセット）
+backoff_log_suppressed=0              # バックオフ待ちログの抑制フラグ
+
 while true; do
-  health_check || true
-  sleep "$INTERVAL"
+    sleep "$CHECK_INTERVAL"
+
+    # モードファイルチェック
+    if [ ! -f "$MODE_FILE" ]; then
+        log "Mode file removed. Watchdog stopping."
+        break
+    fi
+
+    # tmuxセッション存在チェック
+    if ! tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
+        log "WARN: tmux session '$TMUX_SESSION' not found. Waiting..."
+        idle_since=0
+        continue
+    fi
+
+    # claudeプロセス確認
+    local_pane_pid=$(tmux list-panes -t "$TMUX_SESSION" -F '#{pane_pid}' 2>/dev/null | head -1)
+    if [ -z "$local_pane_pid" ]; then
+        log "WARN: pane PID取得失敗"
+        continue
+    fi
+
+    if ! pgrep -P "$local_pane_pid" -f "claude" >/dev/null 2>&1; then
+        log "INFO: claudeプロセスが動いていない。スキップ。"
+        idle_since=0
+        continue
+    fi
+
+    # APIエラー連続検知（idle/busy判定より先に実行）
+    if detect_api_error; then
+        api_error_count=$((api_error_count + 1))
+        if [ $api_error_count -ge $API_ERROR_THRESHOLD ]; then
+            recover_from_api_error
+        else
+            log "API error detected (${api_error_count}/${API_ERROR_THRESHOLD})"
+        fi
+    else
+        # エラーが消えた = 回復した
+        if [ $api_error_count -gt 0 ]; then
+            log "API error cleared (was ${api_error_count} consecutive)"
+            api_error_count=0
+            image_clear_attempts=0
+        fi
+    fi
+
+    # ビジー検知: claudeの子プロセスが動いていたらidle判定しない
+    if is_cc_busy; then
+        if [ $idle_since -ne 0 ]; then
+            log "Activity detected (child process running). Timer reset."
+            idle_since=0
+        fi
+        prev_hash=""  # ビジー復帰後にハッシュ比較をリセット
+        continue
+    fi
+
+    # ペイン内容ハッシュで変化検知
+    current_hash=$(tmux capture-pane -t "$TMUX_SESSION" -p 2>/dev/null | md5sum | cut -d' ' -f1)
+
+    if [ -n "$prev_hash" ] && [ "$current_hash" = "$prev_hash" ]; then
+        # 画面無変化
+        if [ $idle_since -eq 0 ]; then
+            idle_since=$(date +%s)
+            log "Idle timer started (screen unchanged)"
+        else
+            now=$(date +%s)
+            elapsed=$((now - idle_since))
+
+            if [ $elapsed -ge "$IDLE_THRESHOLD" ]; then
+                # クールダウンチェック（指数バックオフ適用）
+                cooldown_elapsed=$((now - last_nudge_epoch))
+                if [ $cooldown_elapsed -ge "$current_cooldown" ]; then
+                    log "IDLE ${elapsed}s detected. Building nudge... (backoff=${current_cooldown}s, consecutive=${consecutive_nudges})"
+                    nudge_msg=$(build_nudge)
+                    send_nudge "$nudge_msg"
+                    last_nudge_epoch=$(date +%s)
+                    idle_since=0  # リセット
+                    backoff_log_suppressed=0
+
+                    # 指数バックオフ: nudge後に復帰しなければ次回は倍の間隔
+                    consecutive_nudges=$((consecutive_nudges + 1))
+                    current_cooldown=$((NUDGE_COOLDOWN * (2 ** consecutive_nudges)))
+                    if [ $current_cooldown -gt $MAX_BACKOFF ]; then
+                        current_cooldown=$MAX_BACKOFF
+                    fi
+                    # バックオフ状態をファイルに記録（--statusで確認可能に）
+                    echo "$current_cooldown" > "$STATE_DIR/backoff_cooldown"
+                    log "Next nudge cooldown: ${current_cooldown}s"
+                else
+                    # バックオフ待ち中のログは初回のみ出す（スパム防止）
+                    if [ $backoff_log_suppressed -eq 0 ]; then
+                        remaining=$((current_cooldown - cooldown_elapsed))
+                        log "IDLE ${elapsed}s but backoff active (next nudge in ${remaining}s)"
+                        backoff_log_suppressed=1
+                    fi
+                fi
+            fi
+        fi
+    else
+        # 画面変化 = CC作業中
+        if [ $idle_since -ne 0 ]; then
+            local_elapsed=$(($(date +%s) - idle_since))
+            log "Activity detected after ${local_elapsed}s idle. Timer reset."
+        fi
+        idle_since=0
+        prev_hash="$current_hash"
+
+        # 活動復帰 → バックオフリセット
+        if [ $consecutive_nudges -gt 0 ]; then
+            log "Backoff reset (was ${current_cooldown}s after ${consecutive_nudges} consecutive nudges)"
+            consecutive_nudges=0
+            current_cooldown=$NUDGE_COOLDOWN
+            rm -f "$STATE_DIR/backoff_cooldown"
+            backoff_log_suppressed=0
+        fi
+    fi
 done
+
+log "=== CC Solo Watchdog 終了 ==="
