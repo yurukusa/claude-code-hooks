@@ -1,0 +1,42 @@
+{
+  "name": "claude-code-hooks-marketplace",
+  "owner": {
+    "name": "yurukusa",
+    "email": "wakakusa.takei@gmail.com"
+  },
+  "metadata": {
+    "description": "Production safety hooks for autonomous Claude Code operation",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "claude-code-hooks",
+      "source": "./",
+      "description": "10 safety hooks + 5 templates from 140+ hours of autonomous Claude Code operation. Context monitoring, syntax checking, branch protection, activity logging, and more.",
+      "version": "1.0.0",
+      "author": {
+        "name": "yurukusa"
+      },
+      "homepage": "https://github.com/yurukusa/claude-code-hooks",
+      "repository": "https://github.com/yurukusa/claude-code-hooks",
+      "license": "MIT",
+      "keywords": [
+        "safety",
+        "hooks",
+        "autonomous",
+        "monitoring",
+        "production",
+        "context-window",
+        "syntax-check",
+        "branch-protection"
+      ],
+      "category": "safety",
+      "tags": [
+        "hooks",
+        "safety",
+        "autonomous",
+        "production"
+      ]
+    }
+  ]
+}

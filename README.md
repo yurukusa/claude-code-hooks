@@ -82,7 +82,22 @@ How the kit maps to [cc-health-check](https://github.com/yurukusa/cc-health-chec
 
 ## Quick Setup
 
-### 1. Copy hooks and templates
+### Option A: Install as Plugin (Recommended)
+
+```bash
+/plugin install claude-code-hooks@yurukusa/claude-code-hooks
+```
+
+That's it. All 10 hooks are automatically configured. No manual path editing, no settings.json changes.
+
+**After install, use the built-in skills:**
+
+- `/claude-code-hooks:setup` — Choose your hook profile (minimal / standard / autonomous)
+- `/claude-code-hooks:diagnose` — Check which hooks are active and healthy
+
+### Option B: Manual Setup
+
+#### 1. Copy hooks and templates
 
 ```bash
 # Hooks
@@ -98,7 +113,7 @@ cp templates/mission.md ~/ops/
 cp templates/LESSONS.md ~/
 ```
 
-### 2. Wire hooks into settings.json
+#### 2. Wire hooks into settings.json
 
 Open `~/.claude/settings.json` and add the hooks configuration. Use one of the example files as a starting point:
 
@@ -127,7 +142,7 @@ Then copy the `"hooks"` section into your own settings file, replacing `/path/to
 }
 ```
 
-### 3. Verify
+#### 3. Verify
 
 Start a Claude Code session and make an edit. You should see syntax check output (on error) and context monitoring messages (when context drops below thresholds).
 
