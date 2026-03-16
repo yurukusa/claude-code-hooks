@@ -10,6 +10,8 @@ Production infrastructure for running Claude Code autonomously. Every hook exist
 
 Covers **18 of 20 checks** in [cc-health-check](https://github.com/yurukusa/cc-health-check).
 
+> **Want it pre-configured?** The [Ops Kit](https://yurukusa.gumroad.com/l/cc-codex-ops-kit?utm_source=github&utm_medium=readme&utm_campaign=ops-kit) ($19) includes all hooks below + 3 exclusive tools + install.sh. One command, 15 minutes, done.
+
 ---
 
 ## What's Included
