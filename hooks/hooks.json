@@ -56,6 +56,17 @@
         ]
       }
     ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/no-ask-human.sh"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "",
