@@ -2,7 +2,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/yurukusa/claude-code-hooks?style=social)](https://github.com/yurukusa/claude-code-hooks)
 
-**10 hooks + 5 templates from 140+ hours of autonomous Claude Code operation.**
+**11 hooks + 5 templates from 160+ hours of autonomous Claude Code operation.**
 
 Production infrastructure for running Claude Code autonomously. Every hook exists because something went wrong without it. Every template encodes a workflow pattern that survived real-world autonomous operation.
 
@@ -30,6 +30,7 @@ Covers **18 of 20 checks** in [cc-health-check](https://github.com/yurukusa/cc-h
 | `no-ask-human.sh` | Detects and discourages questions to absent humans during autonomous operation | PostToolUse |
 | `branch-guard.sh` | Blocks pushes to main/master branches without review | PreToolUse (Bash) |
 | `error-gate.sh` | Blocks external actions (push, publish, POST) when unresolved errors exist | PreToolUse (Bash) |
+| `destructive-guard.sh` | Blocks rm -rf on sensitive paths, git reset --hard, git clean. Prevents NTFS junction traversal data loss | PreToolUse (Bash) |
 
 ### Templates (5)
 
@@ -59,6 +60,7 @@ How the kit maps to [cc-health-check](https://github.com/yurukusa/cc-health-chec
 | Safety | API keys in dedicated files | `CLAUDE-autonomous.md` |
 | Safety | Branch protection | `branch-guard.sh` |
 | Safety | Error-aware gate | `error-gate.sh` |
+| Safety | Destructive command blocker | `destructive-guard.sh` |
 | Quality | Syntax checks after edits | `syntax-check.sh` |
 | Quality | Error detection and tracking | `error-gate.sh` + `activity-logger.sh` |
 | Quality | Definition of Done checklist | `dod-checklists.md` |
@@ -88,7 +90,7 @@ How the kit maps to [cc-health-check](https://github.com/yurukusa/cc-health-chec
 /plugin install claude-code-hooks@yurukusa/claude-code-hooks
 ```
 
-That's it. All 10 hooks are automatically configured. No manual path editing, no settings.json changes.
+That's it. All 11 hooks are automatically configured. No manual path editing, no settings.json changes.
 
 **After install, use the built-in skills:**
 
@@ -224,6 +226,8 @@ Detects question patterns and reminds the agent to decide autonomously. Essentia
 | `CC_PROTECT_BRANCHES` | branch-guard | `main:master` |
 | `CC_ERROR_LOG` | error-gate | `$HOME/.claude/error-tracker.log` |
 | `CC_ERROR_THRESHOLD` | error-gate | `WARNING` |
+| `CC_ALLOW_DESTRUCTIVE` | destructive-guard | `0` |
+| `CC_SAFE_DELETE_DIRS` | destructive-guard | `node_modules:dist:build:.cache` |
 
 ---
 
@@ -282,7 +286,7 @@ Run cc-health-check first to see your score, then use this kit to fix what's mis
 
 **[Claude Code Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit)** ($19) — Everything above, pre-configured and ready to deploy:
 
-- All 10 hooks, pre-configured with `install.sh`
+- All 11 hooks, pre-configured with `install.sh`
 - **6 templates** (CLAUDE.md baseline + autonomous, DoD checklists, task-queue, mission, LESSONS)
 - **3 exclusive tools** (watchdog, CLAUDE.md generator, risk-score)
 - 3 settings.json presets (minimal / standard / autonomous)
