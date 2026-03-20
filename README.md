@@ -2,7 +2,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/yurukusa/claude-code-hooks?style=social)](https://github.com/yurukusa/claude-code-hooks)
 
-**15 hooks + 5 templates from 160+ hours of autonomous Claude Code operation.**
+**16 hooks + 5 templates from 160+ hours of autonomous Claude Code operation.**
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -12,7 +12,8 @@
 │                  (auto-approve-      (destructive-guard  │
 │                   readonly)           branch-guard       │
 │                                       comment-strip      │
-│                                       cd-git-allow)      │
+│                                       cd-git-allow        │
+│                                       secret-guard)       │
 │                         │                   │            │
 │                         ▼                   ▼            │
 │                    Tool Executes ──→ PostToolUse          │
@@ -50,7 +51,7 @@ npx cc-safe-setup --uninstall # Clean removal
 
 ## What's Included
 
-### Hooks (11)
+### Hooks (12)
 
 | Hook | Purpose | Trigger |
 |------|---------|---------|
@@ -65,6 +66,7 @@ npx cc-safe-setup --uninstall # Clean removal
 | `branch-guard.sh` | Blocks pushes to main/master branches without review | PreToolUse (Bash) |
 | `error-gate.sh` | Blocks external actions (push, publish, POST) when unresolved errors exist | PreToolUse (Bash) |
 | `destructive-guard.sh` | Blocks rm -rf on sensitive paths, git reset --hard, git clean. Prevents NTFS junction traversal data loss | PreToolUse (Bash) |
+| `secret-guard.sh` | Blocks git add .env, credential files, git add . with .env present | PreToolUse (Bash) |
 
 ### Templates (5)
 
@@ -124,7 +126,7 @@ How the kit maps to [cc-health-check](https://github.com/yurukusa/cc-health-chec
 /plugin install claude-code-hooks@yurukusa/claude-code-hooks
 ```
 
-That's it. All 11 hooks are automatically configured. No manual path editing, no settings.json changes.
+That's it. All 12 hooks are automatically configured. No manual path editing, no settings.json changes.
 
 **After install, use the built-in skills:**
 
@@ -320,7 +322,7 @@ Run cc-health-check first to see your score, then use this kit to fix what's mis
 
 **[Claude Code Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit)** ($19) — Everything above, pre-configured and ready to deploy:
 
-- All 11 hooks, pre-configured with `install.sh`
+- All 12 hooks, pre-configured with `install.sh`
 - **6 templates** (CLAUDE.md baseline + autonomous, DoD checklists, task-queue, mission, LESSONS)
 - **3 exclusive tools** (watchdog, CLAUDE.md generator, risk-score)
 - 3 settings.json presets (minimal / standard / autonomous)
