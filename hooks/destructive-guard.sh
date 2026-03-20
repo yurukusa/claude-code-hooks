@@ -71,6 +71,24 @@ if echo "$COMMAND" | grep -qE 'rm\s+(-[rf]+\s+)*(\/$|\/\s|\/[^a-z]|\/home|\/etc|
         fi
     done
 
+    # Check for mounted filesystems inside the target (NFS, Docker, bind mounts)
+    # Why: GitHub #36640 — rm -rf on a dir with NFS mount deleted production data
+    if (( SAFE == 0 )); then
+        # Extract the target path from the rm command
+        TARGET_PATH=$(echo "$COMMAND" | grep -oP 'rm\s+(-[rf]+\s+)*\K\S+')
+        if [ -n "$TARGET_PATH" ] && command -v findmnt &>/dev/null; then
+            if findmnt -n -o TARGET --submounts "$TARGET_PATH" 2>/dev/null | grep -q .; then
+                log_block "rm on path with mounted filesystem"
+                echo "BLOCKED: Target contains a mounted filesystem (NFS, Docker, bind)." >&2
+                echo "" >&2
+                echo "Command: $COMMAND" >&2
+                echo "" >&2
+                echo "Unmount the filesystem first, then retry." >&2
+                exit 2
+            fi
+        fi
+    fi
+
     if (( SAFE == 0 )); then
         log_block "rm on sensitive path"
         echo "BLOCKED: rm on sensitive path detected." >&2
