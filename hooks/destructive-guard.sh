@@ -48,6 +48,14 @@ if [[ "${CC_ALLOW_DESTRUCTIVE:-0}" == "1" ]]; then
     exit 0
 fi
 
+# Log function — records blocked commands for audit
+log_block() {
+    local reason="$1"
+    local logfile="${CC_BLOCK_LOG:-$HOME/.claude/blocked-commands.log}"
+    mkdir -p "$(dirname "$logfile")" 2>/dev/null
+    echo "[$(date -Iseconds)] BLOCKED: $reason | cmd: $COMMAND" >> "$logfile" 2>/dev/null
+}
+
 # Safe directories that can be deleted
 SAFE_DIRS="${CC_SAFE_DELETE_DIRS:-node_modules:dist:build:.cache:__pycache__:coverage:.next:.nuxt:tmp}"
 
@@ -64,6 +72,7 @@ if echo "$COMMAND" | grep -qE 'rm\s+(-[rf]+\s+)*(\/$|\/\s|\/[^a-z]|\/home|\/etc|
     done
 
     if (( SAFE == 0 )); then
+        log_block "rm on sensitive path"
         echo "BLOCKED: rm on sensitive path detected." >&2
         echo "" >&2
         echo "Command: $COMMAND" >&2
@@ -81,6 +90,7 @@ fi
 # --- Check 2: git reset --hard ---
 # Only match when git is the actual command, not inside strings/arguments
 if echo "$COMMAND" | grep -qE '^\s*git\s+reset\s+--hard|;\s*git\s+reset\s+--hard|&&\s*git\s+reset\s+--hard|\|\|\s*git\s+reset\s+--hard'; then
+    log_block "git reset --hard"
     echo "BLOCKED: git reset --hard discards all uncommitted changes." >&2
     echo "" >&2
     echo "Command: $COMMAND" >&2
@@ -91,6 +101,7 @@ fi
 
 # --- Check 3: git clean -fd ---
 if echo "$COMMAND" | grep -qE '^\s*git\s+clean\s+-[a-z]*[fd]|;\s*git\s+clean|&&\s*git\s+clean|\|\|\s*git\s+clean'; then
+    log_block "git clean"
     echo "BLOCKED: git clean removes untracked files permanently." >&2
     echo "" >&2
     echo "Command: $COMMAND" >&2
