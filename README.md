@@ -2,7 +2,33 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/yurukusa/claude-code-hooks?style=social)](https://github.com/yurukusa/claude-code-hooks)
 
-**11 hooks + 5 templates from 160+ hours of autonomous Claude Code operation.**
+**15 hooks + 5 templates from 160+ hours of autonomous Claude Code operation.**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Claude Code Session                    │
+│                                                         │
+│  User Prompt ──→ PermissionRequest ──→ PreToolUse       │
+│                  (auto-approve-      (destructive-guard  │
+│                   readonly)           branch-guard       │
+│                                       comment-strip      │
+│                                       cd-git-allow)      │
+│                         │                   │            │
+│                         ▼                   ▼            │
+│                    Tool Executes ──→ PostToolUse          │
+│                                     (syntax-check        │
+│                                      context-monitor     │
+│                                      activity-logger     │
+│                                      tmp-cleanup)        │
+│                         │                                │
+│                         ▼                                │
+│                   Session End ──→ Stop                    │
+│                                  (proof-log-session)     │
+│                                                         │
+│  Notification ──→ no-ask-human                           │
+│  PreCompact   ──→ proof-log-session                      │
+└─────────────────────────────────────────────────────────┘
+```
 
 Production infrastructure for running Claude Code autonomously. Every hook exists because something went wrong without it. Every template encodes a workflow pattern that survived real-world autonomous operation.
 
