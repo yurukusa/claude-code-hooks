@@ -40,7 +40,7 @@ Covers **18 of 20 checks** in [cc-health-check](https://github.com/yurukusa/cc-h
 ### Get Started in 10 Seconds
 
 ```bash
-npx cc-safe-setup          # Install 6 essential hooks (free)
+npx cc-safe-setup          # Install 7 essential hooks (free)
 npx cc-safe-setup --dry-run # Preview what gets installed
 npx cc-safe-setup --uninstall # Clean removal
 ```
