@@ -45,13 +45,13 @@ npx cc-safe-setup --dry-run # Preview what gets installed
 npx cc-safe-setup --uninstall # Clean removal
 ```
 
-> **Want all 15 hooks + templates?** Clone this repo. Or get the [Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit) (pay what you want) with install.sh + 3 exclusive tools.
+> **Want all 16 hooks + templates?** Clone this repo. Or get the [Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit) (pay what you want) with install.sh + 3 exclusive tools.
 
 ---
 
 ## What's Included
 
-### Hooks (12)
+### Hooks (16)
 
 | Hook | Purpose | Trigger |
 |------|---------|---------|
@@ -63,10 +63,14 @@ npx cc-safe-setup --uninstall # Clean removal
 | `proof-log-session.sh` | Auto-generates 5W1H session summaries into daily markdown files | Stop, PreCompact |
 | `session-start-marker.sh` | Records session start time (used by proof-log) | PostToolUse |
 | `no-ask-human.sh` | Detects and discourages questions to absent humans during autonomous operation | PostToolUse |
-| `branch-guard.sh` | Blocks pushes to main/master branches without review | PreToolUse (Bash) |
+| `branch-guard.sh` | Blocks pushes to main/master + force-push on all branches | PreToolUse (Bash) |
 | `error-gate.sh` | Blocks external actions (push, publish, POST) when unresolved errors exist | PreToolUse (Bash) |
 | `destructive-guard.sh` | Blocks rm -rf on sensitive paths, git reset --hard, git clean. Prevents NTFS junction traversal data loss | PreToolUse (Bash) |
 | `secret-guard.sh` | Blocks git add .env, credential files, git add . with .env present | PreToolUse (Bash) |
+| `comment-strip.sh` | Strips bash comments that break permission allowlists ([#29582](https://github.com/anthropics/claude-code/issues/29582)) | PreToolUse (Bash) |
+| `cd-git-allow.sh` | Auto-approves read-only cd+git compounds ([#32985](https://github.com/anthropics/claude-code/issues/32985)) | PreToolUse (Bash) |
+| `auto-approve-readonly.sh` | Auto-approves read-only commands (git log, ls, cat) via PermissionRequest | PermissionRequest |
+| `tmp-cleanup.sh` | Removes stale tmpclaude-* files older than 60 seconds | PostToolUse |
 
 ### Templates (5)
 
