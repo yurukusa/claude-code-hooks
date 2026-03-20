@@ -36,9 +36,15 @@ Production infrastructure for running Claude Code autonomously. Every hook exist
 
 Covers **18 of 20 checks** in [cc-health-check](https://github.com/yurukusa/cc-health-check).
 
-> **Quick start:** `npx cc-safe-setup` installs 4 essential safety hooks in 10 seconds. [Details](https://github.com/yurukusa/cc-safe-setup)
->
-> **Want it all?** The [Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit) ($19) includes all 11 hooks + 3 exclusive tools + install.sh. One command, 15 minutes, done.
+### Get Started in 10 Seconds
+
+```bash
+npx cc-safe-setup          # Install 6 essential hooks (free)
+npx cc-safe-setup --dry-run # Preview what gets installed
+npx cc-safe-setup --uninstall # Clean removal
+```
+
+> **Want all 15 hooks + templates?** Clone this repo. Or get the [Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit) (pay what you want) with install.sh + 3 exclusive tools.
 
 ---
 
