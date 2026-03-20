@@ -79,7 +79,8 @@ if echo "$COMMAND" | grep -qE 'rm\s+(-[rf]+\s+)*(\/$|\/\s|\/[^a-z]|\/home|\/etc|
 fi
 
 # --- Check 2: git reset --hard ---
-if echo "$COMMAND" | grep -qE 'git\s+reset\s+--hard'; then
+# Only match when git is the actual command, not inside strings/arguments
+if echo "$COMMAND" | grep -qE '^\s*git\s+reset\s+--hard|;\s*git\s+reset\s+--hard|&&\s*git\s+reset\s+--hard|\|\|\s*git\s+reset\s+--hard'; then
     echo "BLOCKED: git reset --hard discards all uncommitted changes." >&2
     echo "" >&2
     echo "Command: $COMMAND" >&2
@@ -89,7 +90,7 @@ if echo "$COMMAND" | grep -qE 'git\s+reset\s+--hard'; then
 fi
 
 # --- Check 3: git clean -fd ---
-if echo "$COMMAND" | grep -qE 'git\s+clean\s+-[a-z]*[fd]'; then
+if echo "$COMMAND" | grep -qE '^\s*git\s+clean\s+-[a-z]*[fd]|;\s*git\s+clean|&&\s*git\s+clean|\|\|\s*git\s+clean'; then
     echo "BLOCKED: git clean removes untracked files permanently." >&2
     echo "" >&2
     echo "Command: $COMMAND" >&2
