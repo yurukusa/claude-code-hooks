@@ -191,6 +191,35 @@ exit 0
 
 Save to `~/.claude/hooks/your-hook.sh`, `chmod +x`, and add to settings.json.
 
+## Edit/Write Guard (Defense-in-Depth)
+
+**Problem:** PreToolUse hook `permissionDecision: "deny"` is ignored for Edit/Write tools — the file gets modified anyway ([#37210](https://github.com/anthropics/claude-code/issues/37210))
+
+```bash
+#!/bin/bash
+# edit-guard.sh — Block Edit/Write to protected files
+# Uses chmod as backup enforcement when deny is ignored
+
+INPUT=$(cat)
+TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
+FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+
+[[ "$TOOL" != "Edit" && "$TOOL" != "Write" ]] && exit 0
+
+# Protected patterns — customize for your project
+PROTECTED=(".env" "credentials" "secrets" ".pem" ".key")
+for pattern in "${PROTECTED[@]}"; do
+    if [[ "$FILE" == *"$pattern"* ]]; then
+        chmod 444 "$FILE" 2>/dev/null  # defense-in-depth
+        echo "BLOCKED: Edit/Write denied for protected file: $FILE" >&2
+        exit 2
+    fi
+done
+exit 0
+```
+
+**Settings:** `"matcher": ""` (all tools)
+
 ---
 
 *Each recipe was tested in a real GitHub Issue response. PRs welcome for new recipes.*
