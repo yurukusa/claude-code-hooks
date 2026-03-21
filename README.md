@@ -344,6 +344,8 @@ Run cc-health-check first to see your score, then use this kit to fix what's mis
 
 ---
 
+If these hooks saved you from a bad day, consider giving this repo a ⭐ — it helps others find it.
+
 ## License
 
 MIT License.
