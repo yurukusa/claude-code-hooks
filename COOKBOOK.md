@@ -115,4 +115,27 @@ exit 0
 
 ---
 
+## Block Push When Errors Exist
+
+**Problem:** Claude skips pipeline checks and pushes broken code ([#36970](https://github.com/anthropics/claude-code/issues/36970))
+
+```bash
+#!/bin/bash
+COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)
+[[ -z "$COMMAND" ]] && exit 0
+
+if echo "$COMMAND" | grep -qE '^\s*git\s+push'; then
+    ERROR_LOG="${CC_ERROR_LOG:-$HOME/.claude/error-tracker.log}"
+    if [ -f "$ERROR_LOG" ] && tail -5 "$ERROR_LOG" | grep -q "FAIL\|ERROR"; then
+        echo "BLOCKED: Unresolved errors. Fix before pushing." >&2
+        exit 2
+    fi
+fi
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: Bash
+> CLAUDE.md rules can be ignored. This hook **cannot**.
+
+---
+
 *Each recipe was tested in a real GitHub Issue response. PRs welcome for new recipes.*
