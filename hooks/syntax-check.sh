@@ -34,7 +34,7 @@
 # ================================================================
 
 INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
 
 # No file path = nothing to check
 if [[ -z "$FILE_PATH" || ! -f "$FILE_PATH" ]]; then

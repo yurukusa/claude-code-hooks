@@ -36,8 +36,8 @@ if [[ "${CC_AUTO_APPROVE_DISABLE:-0}" == "1" ]]; then
     exit 0
 fi
 
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null)
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 
 # Only handle Bash tool
 if [[ "$TOOL" != "Bash" ]]; then
