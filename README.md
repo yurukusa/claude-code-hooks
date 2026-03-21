@@ -1,6 +1,7 @@
 # claude-code-hooks
 
 [![GitHub stars](https://img.shields.io/github/stars/yurukusa/claude-code-hooks?style=social)](https://github.com/yurukusa/claude-code-hooks)
+[![tests](https://github.com/yurukusa/claude-code-hooks/actions/workflows/test.yml/badge.svg)](https://github.com/yurukusa/claude-code-hooks/actions/workflows/test.yml)
 
 **16 hooks + 5 templates from 160+ hours of autonomous Claude Code operation.**
 
@@ -335,7 +336,7 @@ Run cc-health-check first to see your score, then use this kit to fix what's mis
 **[Claude Code Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit)** ($19) — Everything above, pre-configured and ready to deploy:
 
 - All 16 hooks, pre-configured with `install.sh`
-- **6 templates** (CLAUDE.md baseline + autonomous, DoD checklists, task-queue, mission, LESSONS)
+- **5 templates** (CLAUDE.md baseline + autonomous, DoD checklists, task-queue, mission, LESSONS)
 - **3 exclusive tools** (watchdog, CLAUDE.md generator, risk-score)
 - 3 settings.json presets (minimal / standard / autonomous)
 
