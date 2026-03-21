@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-03-21 (13 commits)
+- **COOKBOOK.md**: 8 recipes + "How to Write" guide from 34 GitHub Issue responses
+- **secret-guard**: blocks git add .env / credentials
+- hooks.json: 13→16 entries (added comment-strip, cd-git-allow, tmp-cleanup)
+- Fixed jq stderr on malformed input (all hooks)
+- Fixed WSL2 notification fallback
+- Fixed README Option A (plugin dir pending → npx cc-safe-setup)
+- test-cookbook.sh integration tests
+- Issue #1 resolved (plugin install workaround)
+
 ## 2.0.0 — 2026-02-28
 
 Major expansion: from 8 hooks to 10 hooks + 5 operational templates. Now covers 18 of 20 cc-health-check checks.
