@@ -47,13 +47,16 @@ exit 0
 
 ```bash
 #!/bin/bash
-# Linux
-notify-send "Claude Code" "Waiting for your input" 2>/dev/null ||
+# Linux (native, not WSL2)
+[ -z "$WSL_DISTRO_NAME" ] && notify-send "Claude Code" "Waiting for your input" 2>/dev/null && exit 0
 # macOS
-osascript -e 'display notification "Waiting for input" with title "Claude Code"' 2>/dev/null
+osascript -e 'display notification "Waiting for input" with title "Claude Code"' 2>/dev/null && exit 0
+# WSL2 (PowerShell toast)
+powershell.exe -Command "Write-Host 'Claude Code: Waiting for input'" 2>/dev/null
 exit 0
 ```
 **Trigger:** Notification, Matcher: (empty)
+> **WSL2 note:** `notify-send` exists but D-Bus is usually not running. The script detects WSL2 via `$WSL_DISTRO_NAME` and uses PowerShell instead.
 
 ---
 
