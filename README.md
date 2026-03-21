@@ -288,7 +288,7 @@ Detects question patterns and reminds the agent to decide autonomously. Essentia
 
 ## Cookbook
 
-**[COOKBOOK.md](COOKBOOK.md)** — 9 ready-to-use hook recipes from real GitHub Issues. Auto-approve git with `-C` flags, SSH commands, desktop notifications, test enforcement, and more.
+**[COOKBOOK.md](COOKBOOK.md)** — 10 ready-to-use hook recipes from real GitHub Issues. Auto-approve git with `-C` flags, SSH commands, desktop notifications, test enforcement, and more.
 
 ---
 
