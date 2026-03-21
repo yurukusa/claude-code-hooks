@@ -124,13 +124,15 @@ How the kit maps to [cc-health-check](https://github.com/yurukusa/cc-health-chec
 
 ## Quick Setup
 
-### Option A: Install as Plugin (Recommended)
+### Option A: Quick Install (Recommended)
 
 ```bash
-/plugin install claude-code-hooks@yurukusa/claude-code-hooks
+npx cc-safe-setup
 ```
 
-That's it. All 12 hooks are automatically configured. No manual path editing, no settings.json changes.
+Installs 7 essential hooks in 10 seconds. Zero config. [Details](https://github.com/yurukusa/cc-safe-setup)
+
+> **Plugin directory:** `/plugin install` is not yet available — our directory submission is pending review. Use `npx cc-safe-setup` or Option B below.
 
 **After install, use the built-in skills:**
 
