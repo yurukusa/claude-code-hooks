@@ -138,4 +138,17 @@ exit 0
 
 ---
 
+## Verify Memory Path (Auto Memory Debug)
+
+**Problem:** MEMORY.md written to project tree but auto-loaded from `~/.claude/projects/` ([#36973](https://github.com/anthropics/claude-code/issues/36973))
+
+```bash
+# Find where your MEMORY.md actually lives
+find ~/.claude/projects -name 'MEMORY.md' -type f 2>/dev/null
+```
+
+Not a hook — but a diagnostic that saves hours of confusion about why memories aren't persisting.
+
+---
+
 *Each recipe was tested in a real GitHub Issue response. PRs welcome for new recipes.*
