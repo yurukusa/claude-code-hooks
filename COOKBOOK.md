@@ -223,3 +223,21 @@ exit 0
 ---
 
 *Each recipe was tested in a real GitHub Issue response. PRs welcome for new recipes.*
+
+## Auto-Backup Config Files Before Edit
+**Problem:** Claude rewrites config files (.mcp.json, settings.json) and strips important sections ([#36999](https://github.com/anthropics/claude-code/issues/36999))
+```bash
+INPUT=$(cat)
+TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
+FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+[[ "$TOOL" != "Edit" && "$TOOL" != "Write" ]] && exit 0
+CONFIGS=(".mcp.json" "settings.json" "config.yaml" "config.json")
+for cfg in "${CONFIGS[@]}"; do
+    if [[ "$FILE" == *"$cfg" ]]; then
+        cp "$FILE" "${FILE}.bak-$(date +%s)" 2>/dev/null
+        echo "Backed up $FILE" >&2
+    fi
+done
+exit 0
+```
+**Settings:** `"matcher": ""` (all tools)
