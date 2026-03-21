@@ -151,4 +151,46 @@ Not a hook — but a diagnostic that saves hours of confusion about why memories
 
 ---
 
+---
+
+## How to Write Your Own Hook
+
+Every hook follows the same pattern:
+
+```bash
+#!/bin/bash
+# 1. Read input from stdin
+INPUT=$(cat)
+
+# 2. Extract what you need (silence jq errors for malformed input)
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
+# or: FILE_PATH, .tool_name, .prompt
+
+# 3. Check if empty (exit early)
+[[ -z "$COMMAND" ]] && exit 0
+
+# 4. Your logic here
+if echo "$COMMAND" | grep -qE 'your_pattern'; then
+    # Option A: Block (exit 2)
+    echo "BLOCKED: reason" >&2
+    exit 2
+
+    # Option B: Auto-approve
+    jq -n '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
+    exit 0
+
+    # Option C: Warn (exit 0, but stderr goes to Claude's context)
+    echo "WARNING: something" >&2
+fi
+
+# 5. Default: pass through
+exit 0
+```
+
+**Exit codes:** `0` = allow, `2` = hard block, anything on stderr = shown to Claude.
+
+Save to `~/.claude/hooks/your-hook.sh`, `chmod +x`, and add to settings.json.
+
+---
+
 *Each recipe was tested in a real GitHub Issue response. PRs welcome for new recipes.*
