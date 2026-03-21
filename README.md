@@ -131,14 +131,17 @@ How the kit maps to [cc-health-check](https://github.com/yurukusa/cc-health-chec
 npx cc-safe-setup
 ```
 
-Installs 7 essential hooks in 10 seconds. Zero config. [Details](https://github.com/yurukusa/cc-safe-setup)
+Installs 8 essential hooks in 10 seconds. Zero config. [Details](https://github.com/yurukusa/cc-safe-setup)
 
-> **Plugin directory:** `/plugin install` is not yet available — our directory submission is pending review. Use `npx cc-safe-setup` or Option B below.
+**After install, verify hooks are working:**
 
-**After install, use the built-in skills:**
+```bash
+npx cc-safe-setup --verify   # Test each hook with sample inputs
+npx cc-safe-setup --status   # Check which hooks are installed
+npx cc-health-check          # Full setup diagnostic (20 checks)
+```
 
-- `/claude-code-hooks:setup` — Choose your hook profile (minimal / standard / autonomous)
-- `/claude-code-hooks:diagnose` — Check which hooks are active and healthy
+> **Note:** cc-safe-setup installs **hooks** (automatic background scripts), not skills or plugins. Hooks activate immediately after restarting Claude Code — no additional commands needed.
 
 ### Option B: Manual Setup
 
