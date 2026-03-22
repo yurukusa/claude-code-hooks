@@ -294,3 +294,33 @@ done
 exit 0
 ```
 **Settings:** `"matcher": ""` (all tools)
+
+---
+
+## Protect Home Directory Dotfiles
+
+**Problem:** Claude overwrites `.bashrc`, deletes `~/.aws/`, runs `chezmoi apply` without diffing first ([#37478](https://github.com/anthropics/claude-code/issues/37478))
+
+```bash
+INPUT=$(cat)
+TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
+FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+
+# Block Edit/Write to critical dotfiles
+if [[ "$TOOL" == "Edit" || "$TOOL" == "Write" ]]; then
+    case "$FILE" in
+        "$HOME/.bashrc"|"$HOME/.zshrc"|"$HOME/.profile"|"$HOME/.gitconfig")
+            echo "BLOCKED: Cannot modify $FILE" >&2; exit 2 ;;
+        "$HOME/.ssh/"*|"$HOME/.aws/"*)
+            echo "BLOCKED: Cannot modify files in ${FILE%/*}/" >&2; exit 2 ;;
+    esac
+fi
+
+# Block chezmoi/stow apply without --dry-run
+if [[ "$TOOL" == "Bash" ]] && echo "$CMD" | grep -qE 'chezmoi\s+(init|apply)'; then
+    echo "$CMD" | grep -qE '(--dry-run|diff)' || { echo "BLOCKED: Run chezmoi diff first" >&2; exit 2; }
+fi
+exit 0
+```
+**Settings:** `"matcher": ""` (all tools)
