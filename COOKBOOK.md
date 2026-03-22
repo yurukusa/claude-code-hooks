@@ -174,6 +174,36 @@ exit 0
 ```
 **Trigger:** PreToolUse, Matcher: Bash
 
+## Block Database Destruction (Laravel/Django/Rails)
+
+**Problem:** Claude runs `migrate:fresh` or `DROP DATABASE` and wipes production data ([#37405](https://github.com/anthropics/claude-code/issues/37405), [#37439](https://github.com/anthropics/claude-code/issues/37439))
+
+```bash
+#!/bin/bash
+COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)
+[[ -z "$COMMAND" ]] && exit 0
+
+# Laravel
+if echo "$COMMAND" | grep -qiE 'artisan\s+(migrate:fresh|migrate:reset|db:wipe)'; then
+    echo "BLOCKED: destructive database command" >&2
+    exit 2
+fi
+
+# Django
+if echo "$COMMAND" | grep -qiE 'manage\.py\s+(flush|sqlflush)'; then
+    echo "BLOCKED: destructive database command" >&2
+    exit 2
+fi
+
+# Raw SQL
+if echo "$COMMAND" | grep -qiE 'DROP\s+(DATABASE|TABLE)|TRUNCATE'; then
+    echo "BLOCKED: destructive SQL" >&2
+    exit 2
+fi
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: Bash
+
 ---
 
 ## How to Write Your Own Hook
