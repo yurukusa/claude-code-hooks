@@ -406,3 +406,22 @@ fi
 exit 0
 ```
 **Trigger:** PreToolUse, Matcher: Bash
+
+---
+
+## Block Path Traversal in Edit/Write
+
+**Problem:** Claude uses `../../` in file paths to write outside the project directory
+
+```bash
+INPUT=$(cat)
+TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null)
+FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+[[ "$TOOL" != "Edit" && "$TOOL" != "Write" ]] && exit 0
+if echo "$FILE" | grep -qE '\.\./\.\./|^/(etc|usr|bin|sbin|var)/'; then
+    echo "BLOCKED: Path traversal or system directory: $FILE" >&2
+    exit 2
+fi
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: `Edit|Write`
