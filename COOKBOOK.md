@@ -176,7 +176,7 @@ exit 0
 
 ## Block Database Destruction (Laravel/Django/Rails)
 
-**Problem:** Claude runs `migrate:fresh` or `DROP DATABASE` and wipes production data ([#37405](https://github.com/anthropics/claude-code/issues/37405), [#37439](https://github.com/anthropics/claude-code/issues/37439))
+**Problem:** Claude runs `migrate:fresh`, `prisma migrate reset`, or `DROP DATABASE` and wipes production data ([#37405](https://github.com/anthropics/claude-code/issues/37405), [#37439](https://github.com/anthropics/claude-code/issues/37439), [#34729](https://github.com/anthropics/claude-code/issues/34729))
 
 ```bash
 #!/bin/bash
@@ -192,6 +192,12 @@ fi
 # Django
 if echo "$COMMAND" | grep -qiE 'manage\.py\s+(flush|sqlflush)'; then
     echo "BLOCKED: destructive database command" >&2
+    exit 2
+fi
+
+# Prisma
+if echo "$COMMAND" | grep -qiE 'prisma\s+migrate\s+reset|prisma\s+db\s+push\s+--force-reset'; then
+    echo "BLOCKED: destructive Prisma command" >&2
     exit 2
 fi
 
