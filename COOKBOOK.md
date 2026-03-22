@@ -349,3 +349,21 @@ git commit -m "checkpoint: auto-save $(date +%H:%M:%S)" --no-verify 2>/dev/null
 exit 0
 ```
 **Trigger:** PostToolUse, Matcher: `Edit|Write`
+
+---
+
+## Block git config --global
+
+**Problem:** Claude modifies global git config (user.email, user.name) without user consent ([#37201](https://github.com/anthropics/claude-code/issues/37201))
+
+```bash
+CMD=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)
+[[ -z "$CMD" ]] && exit 0
+if echo "$CMD" | grep -qE '\bgit\s+config\s+--global\b'; then
+    echo "BLOCKED: git config --global not allowed" >&2
+    echo "Use --local for project-specific config" >&2
+    exit 2
+fi
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: Bash
