@@ -367,3 +367,24 @@ fi
 exit 0
 ```
 **Trigger:** PreToolUse, Matcher: Bash
+
+---
+
+## Block Deploy Without Commit
+
+**Problem:** Claude deploys without committing. Uncommitted changes silently revert on next sync ([#37314](https://github.com/anthropics/claude-code/issues/37314))
+
+```bash
+CMD=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)
+[[ -z "$CMD" ]] && exit 0
+if echo "$CMD" | grep -qiE '(rsync|scp|deploy|firebase\s+deploy|vercel|netlify\s+deploy)'; then
+    git rev-parse --git-dir &>/dev/null || exit 0
+    DIRTY=$(git status --porcelain 2>/dev/null | head -1)
+    if [[ -n "$DIRTY" ]]; then
+        echo "BLOCKED: Uncommitted changes. Commit before deploying." >&2
+        exit 2
+    fi
+fi
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: Bash
