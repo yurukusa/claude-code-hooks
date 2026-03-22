@@ -151,6 +151,29 @@ Not a hook — but a diagnostic that saves hours of confusion about why memories
 
 ---
 
+## Block PowerShell Destructive Commands (Windows/WSL2)
+
+**Problem:** Claude runs `Remove-Item -Recurse -Force *` and destroys all files ([#37331](https://github.com/anthropics/claude-code/issues/37331))
+
+```bash
+#!/bin/bash
+COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)
+[[ -z "$COMMAND" ]] && exit 0
+
+# Skip string output commands (echo, printf, cat) to avoid false positives
+if echo "$COMMAND" | grep -qE '^\s*(git\s+commit|echo\s|printf\s|cat\s)'; then
+    exit 0
+fi
+
+# Block PowerShell recursive force-delete and Windows equivalents
+if echo "$COMMAND" | grep -qiE 'Remove-Item.*-Recurse.*-Force|Remove-Item.*-Force.*-Recurse|del\s+/s\s+/q|rd\s+/s\s+/q'; then
+    echo "BLOCKED: Destructive PowerShell command" >&2
+    exit 2
+fi
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: Bash
+
 ---
 
 ## How to Write Your Own Hook
