@@ -310,7 +310,7 @@ Install any example: `npx cc-safe-setup --install-example <name>`
 
 ## Cookbook
 
-**[COOKBOOK.md](COOKBOOK.md)** — 16 ready-to-use hook recipes from real GitHub Issues. Auto-approve git with `-C` flags, SSH commands, desktop notifications, test enforcement, PowerShell protection, database wipe prevention, dotfile protection, auto-checkpoint, git config guard, and more.
+**[COOKBOOK.md](COOKBOOK.md)** — 17 ready-to-use hook recipes from real GitHub Issues. Auto-approve git with `-C` flags, SSH commands, desktop notifications, test enforcement, PowerShell protection, database wipe prevention, dotfile protection, auto-checkpoint, git config guard, and more.
 
 ---
 

@@ -388,3 +388,21 @@ fi
 exit 0
 ```
 **Trigger:** PreToolUse, Matcher: Bash
+
+---
+
+## Block Hardcoded API Keys in Export
+
+**Problem:** Claude hardcodes API keys into `export` commands, exposing them in shell history
+
+```bash
+CMD=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)
+[[ -z "$CMD" ]] && exit 0
+if echo "$CMD" | grep -qE 'export\s+\w+=.*(sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|glpat-[a-zA-Z0-9]{20,})'; then
+    echo "BLOCKED: Hardcoded API key in export" >&2
+    echo "Use: export VAR=\$(cat ~/.credentials/key)" >&2
+    exit 2
+fi
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: Bash
