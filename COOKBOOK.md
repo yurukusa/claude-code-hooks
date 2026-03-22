@@ -174,9 +174,9 @@ exit 0
 ```
 **Trigger:** PreToolUse, Matcher: Bash
 
-## Block Database Destruction (Laravel/Django/Rails)
+## Block Database Destruction (Laravel/Django/Rails/Doctrine/Prisma)
 
-**Problem:** Claude runs `migrate:fresh`, `prisma migrate reset`, or `DROP DATABASE` and wipes production data ([#37405](https://github.com/anthropics/claude-code/issues/37405), [#37439](https://github.com/anthropics/claude-code/issues/37439), [#34729](https://github.com/anthropics/claude-code/issues/34729))
+**Problem:** Claude runs `migrate:fresh`, `doctrine:fixtures:load`, `prisma migrate reset`, or `DROP DATABASE` and wipes data ([#37405](https://github.com/anthropics/claude-code/issues/37405), [#37439](https://github.com/anthropics/claude-code/issues/37439), [#34729](https://github.com/anthropics/claude-code/issues/34729), [#37574](https://github.com/anthropics/claude-code/issues/37574))
 
 ```bash
 #!/bin/bash
@@ -192,6 +192,12 @@ fi
 # Django
 if echo "$COMMAND" | grep -qiE 'manage\.py\s+(flush|sqlflush)'; then
     echo "BLOCKED: destructive database command" >&2
+    exit 2
+fi
+
+# Doctrine/Symfony
+if echo "$COMMAND" | grep -qiE 'doctrine:(fixtures:load|schema:drop|database:drop)' && ! echo "$COMMAND" | grep -qE '\-\-append'; then
+    echo "BLOCKED: destructive Doctrine command" >&2
     exit 2
 fi
 
