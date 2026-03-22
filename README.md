@@ -300,6 +300,7 @@ Real incidents from GitHub Issues, and the hooks that prevent them:
 | `.bashrc` overwritten by `chezmoi apply` | [#37478](https://github.com/anthropics/claude-code/issues/37478) | `protect-dotfiles` (example) |
 | `git config --global` modified without consent | [#37201](https://github.com/anthropics/claude-code/issues/37201) | `git-config-guard` (example) |
 | Edits silently reverted during context compaction | [#34674](https://github.com/anthropics/claude-code/issues/34674) | `auto-checkpoint` (example) |
+| Deployed without committing, changes reverted on sync | [#37314](https://github.com/anthropics/claude-code/issues/37314) | `deploy-guard` (example) |
 | CLAUDE.md memory rules ignored repeatedly | [#37314](https://github.com/anthropics/claude-code/issues/37314) | Use hooks instead of memory |
 
 Install any example: `npx cc-safe-setup --install-example <name>`
