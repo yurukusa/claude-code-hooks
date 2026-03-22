@@ -330,3 +330,22 @@ fi
 exit 0
 ```
 **Settings:** `"matcher": ""` (all tools)
+
+---
+
+## Auto-Checkpoint After Edits
+
+**Problem:** Context compaction silently reverts uncommitted changes to their git HEAD state ([#34674](https://github.com/anthropics/claude-code/issues/34674))
+
+```bash
+INPUT=$(cat)
+TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null)
+[[ "$TOOL" != "Edit" && "$TOOL" != "Write" ]] && exit 0
+git rev-parse --git-dir &>/dev/null || exit 0
+DIRTY=$(git status --porcelain 2>/dev/null | head -1)
+[[ -z "$DIRTY" ]] && exit 0
+git add -A 2>/dev/null
+git commit -m "checkpoint: auto-save $(date +%H:%M:%S)" --no-verify 2>/dev/null
+exit 0
+```
+**Trigger:** PostToolUse, Matcher: `Edit|Write`
