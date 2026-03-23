@@ -569,3 +569,17 @@ HANDOFF="${CC_HANDOFF_FILE:-$HOME/.claude/session-handoff.md}"
 exit 0
 ```
 **Trigger:** Stop, Matcher: `""` (empty)
+**Problem:** Claude modifies 30+ files without committing. The resulting diff is unreviable.
+```bash
+COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)
+[ -z "$COMMAND" ] && exit 0
+echo "$COMMAND" | grep -qE '^\s*git\s+(commit|add\s+(-A|--all|\.))' || exit 0
+[ -d .git ] || exit 0
+TOTAL=$(git diff --name-only HEAD 2>/dev/null | wc -l)
+STAGED=$(git diff --cached --name-only 2>/dev/null | wc -l)
+COUNT=$((TOTAL + STAGED))
+[ "$COUNT" -ge 50 ] && echo "BLOCKED: $COUNT files — split into smaller commits" >&2 && exit 2
+[ "$COUNT" -ge 10 ] && echo "WARNING: $COUNT files changed" >&2
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: `Bash`
