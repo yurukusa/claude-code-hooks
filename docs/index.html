@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code Hooks Cookbook — Interactive</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh;padding:1.5rem}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.4rem;color:#f0f6fc;margin-bottom:.3rem}
+.sub{color:#8b949e;font-size:.85rem;margin-bottom:1rem}
+input{width:100%;padding:.6rem;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;font-size:.9rem;margin-bottom:1rem}
+input::placeholder{color:#484f58}
+.filters{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}
+.filter{padding:.25rem .6rem;border-radius:4px;border:1px solid #30363d;background:transparent;color:#8b949e;cursor:pointer;font-size:.75rem}
+.filter.active{background:#238636;border-color:#238636;color:#fff}
+.recipe{background:#161b22;border:1px solid #30363d;border-radius:6px;margin:.5rem 0;overflow:hidden}
+.recipe-header{padding:.75rem 1rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.recipe-header:hover{background:#1c2128}
+.recipe-title{font-weight:600;color:#f0f6fc;font-size:.9rem}
+.recipe-meta{font-size:.7rem;color:#8b949e}
+.recipe-body{display:none;padding:0 1rem .75rem;border-top:1px solid #21262d}
+.recipe-body.open{display:block}
+.recipe-desc{color:#8b949e;font-size:.8rem;margin:.5rem 0}
+pre{background:#0d1117;border:1px solid #30363d;border-radius:4px;padding:.6rem;font-size:.75rem;overflow-x:auto;position:relative;margin:.4rem 0}
+.copy{position:absolute;top:.3rem;right:.3rem;background:#30363d;color:#c9d1d9;border:none;padding:.15rem .4rem;border-radius:3px;font-size:.65rem;cursor:pointer}
+.copy:hover{background:#484f58}
+.trigger{display:inline-block;padding:.1rem .3rem;border-radius:3px;font-size:.65rem;background:#1f6feb22;color:#58a6ff;border:1px solid #1f6feb44}
+a{color:#58a6ff;text-decoration:none}
+.footer{text-align:center;color:#484f58;font-size:.7rem;margin-top:2rem}
+.count{color:#8b949e;font-size:.8rem;margin-bottom:.5rem}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Claude Code Hooks Cookbook</h1>
+<p class="sub">25 copy-paste recipes from real GitHub Issues. <a href="https://github.com/yurukusa/claude-code-hooks/blob/main/COOKBOOK.md">Source</a></p>
+
+<input id="search" placeholder="Search recipes... (e.g. 'rm', 'git push', 'approve', 'database')">
+
+<div class="filters">
+  <button class="filter active" data-cat="all">All</button>
+  <button class="filter" data-cat="block">Block</button>
+  <button class="filter" data-cat="approve">Auto-Approve</button>
+  <button class="filter" data-cat="detect">Detect/Warn</button>
+  <button class="filter" data-cat="utility">Utility</button>
+</div>
+
+<div class="count" id="count"></div>
+<div id="recipes"></div>
+
+<p class="footer">
+  <a href="https://github.com/yurukusa/cc-safe-setup">cc-safe-setup</a> ·
+  <a href="https://yurukusa.github.io/cc-safe-setup/">Audit Tool</a> ·
+  <a href="https://yurukusa.github.io/cc-safe-setup/cheatsheet.html">Cheat Sheet</a>
+</p>
+</div>
+
+<script>
+const RECIPES = [
+  {cat:'approve',title:'Auto-Approve Read-Only Git',desc:'Bash(git status:*) doesn\'t match git -C /path status',trigger:'PreToolUse',matcher:'Bash',issue:'#36900',code:`COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)\n[[ -z "$COMMAND" ]] && exit 0\nif echo "$COMMAND" | grep -qE '^\\s*git\\s+(-C\\s+\\S+\\s+)?(status|log|diff|branch|show|rev-parse)(\\s|$)'; then\n    jq -n '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'\nfi\nexit 0`},
+  {cat:'approve',title:'Auto-Approve SSH Commands',desc:'ssh * uptime * doesn\'t match ssh host uptime (zero args)',trigger:'PreToolUse',matcher:'Bash',issue:'#36873',code:`COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)\nSAFE="uptime|w|whoami|hostname|uname|date|df|free"\nif echo "$COMMAND" | grep -qE "^\\s*ssh\\s+\\S+\\s+($SAFE)(\\s|$)"; then\n    jq -n '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'\nfi\nexit 0`},
+  {cat:'utility',title:'Desktop Notification When Waiting',desc:'5 sessions running. Which one needs you?',trigger:'Notification',matcher:'',issue:'#36885',code:`[ -z "$WSL_DISTRO_NAME" ] && notify-send "Claude Code" "Waiting" 2>/dev/null && exit 0\nosascript -e 'display notification "Waiting" with title "Claude Code"' 2>/dev/null && exit 0\npowershell.exe -Command "Write-Host 'Claude Code: Waiting'" 2>/dev/null\nexit 0`},
+  {cat:'detect',title:'Enforce Tests for Every Change',desc:'CLAUDE.md says test everything. Claude ignores it.',trigger:'PostToolUse',matcher:'Edit|Write',issue:'#36920',code:`FILE=$(cat | jq -r '.tool_input.file_path // empty' 2>/dev/null)\n[[ "$FILE" == *.py ]] && [[ "$FILE" != *test* ]] && {\n    BASE=$(basename "$FILE" .py)\n    [ ! -f "tests/test_\${BASE}.py" ] && echo "WARNING: No test for $FILE" >&2\n}\nexit 0`},
+  {cat:'block',title:'Block PowerShell Destructive Commands',desc:'Remove-Item -Recurse -Force destroyed entire repo',trigger:'PreToolUse',matcher:'Bash',issue:'#37331',code:`COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)\n[[ -z "$COMMAND" ]] && exit 0\nif echo "$COMMAND" | grep -qiE 'Remove-Item.*-Recurse.*-Force|rd\\s+/s\\s+/q'; then\n    echo "BLOCKED: PowerShell destructive command" >&2\n    exit 2\nfi\nexit 0`},
+  {cat:'block',title:'Block Database Destruction',desc:'migrate:fresh, DROP DATABASE, prisma reset',trigger:'PreToolUse',matcher:'Bash',issue:'#37405',code:`COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)\n[[ -z "$COMMAND" ]] && exit 0\nif echo "$COMMAND" | grep -qiE 'migrate:fresh|db:drop|DROP\\s+DATABASE|prisma\\s+migrate\\s+reset'; then\n    echo "BLOCKED: Destructive database command" >&2\n    exit 2\nfi\nexit 0`},
+  {cat:'block',title:'Block Dotfile Modifications',desc:'.bashrc destroyed by chezmoi without diff',trigger:'PreToolUse',matcher:'Bash',issue:'#37478',code:`FILE=$(cat | jq -r '.tool_input.file_path // empty' 2>/dev/null)\n[[ -z "$FILE" ]] && exit 0\nif echo "$FILE" | grep -qE '(^\\.bashrc$|^\\.zshrc$|\\.aws/|\\.ssh/|\\.gnupg/)'; then\n    echo "BLOCKED: Protected dotfile: $FILE" >&2\n    exit 2\nfi\nexit 0`},
+  {cat:'block',title:'Block git config --global',desc:'Unauthorized global git config changes',trigger:'PreToolUse',matcher:'Bash',issue:'#37201',code:`COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)\n[[ -z "$COMMAND" ]] && exit 0\nif echo "$COMMAND" | grep -qE 'git\\s+config\\s+--global'; then\n    echo "BLOCKED: git config --global modification" >&2\n    exit 2\nfi\nexit 0`},
+  {cat:'block',title:'Block Deploy Without Commit',desc:'Deploying with uncommitted changes',trigger:'PreToolUse',matcher:'Bash',issue:'#37314',code:`COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)\n[[ -z "$COMMAND" ]] && exit 0\nif echo "$COMMAND" | grep -qiE '(deploy|firebase|vercel|netlify)'; then\n    if [ -d .git ] && ! git diff --quiet 2>/dev/null; then\n        echo "BLOCKED: Uncommitted changes. Commit first." >&2\n        exit 2\n    fi\nfi\nexit 0`},
+  {cat:'block',title:'Block Hardcoded API Keys',desc:'export with sk-, ghp_, glpat- patterns',trigger:'PreToolUse',matcher:'Bash',code:`COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)\n[[ -z "$COMMAND" ]] && exit 0\nif echo "$COMMAND" | grep -qE 'export\\s+\\w+=[\"\\x27]?(sk-|ghp_|glpat-)'; then\n    echo "BLOCKED: Hardcoded API key in export" >&2\n    exit 2\nfi\nexit 0`},
+  {cat:'block',title:'Block Path Traversal',desc:'../../ in Edit/Write targets system directories',trigger:'PreToolUse',matcher:'Edit|Write',code:`INPUT=$(cat)\nFILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)\nif echo "$FILE" | grep -qE '\\.\\./\\.\\./|^/(etc|usr|bin|sbin|var)/'; then\n    echo "BLOCKED: Path traversal: $FILE" >&2\n    exit 2\nfi\nexit 0`},
+  {cat:'block',title:'Case-Insensitive FS Guard',desc:'exFAT/NTFS: Content and content = same path',trigger:'PreToolUse',matcher:'Bash',issue:'#37875',code:`COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)\n[[ -z "$COMMAND" ]] && exit 0\n# Tests if FS is case-insensitive, checks for collisions\n# Full script: npx cc-safe-setup --install-example case-sensitive-guard`},
+  {cat:'approve',title:'Auto-Approve Compound Commands',desc:'cd /path && git log breaks Bash(git:*) matching',trigger:'PreToolUse',matcher:'Bash',issue:'#30519',code:`# Splits command on && || ; and checks each component\n# Full script: npx cc-safe-setup --install-example compound-command-approver`},
+  {cat:'utility',title:'Clean /tmp/claude-*-cwd Files',desc:'Hundreds accumulate per day. Never cleaned up.',trigger:'Stop',matcher:'',issue:'#8856',code:`find /tmp -maxdepth 1 -name 'claude-*-cwd' -type f -mmin +60 -delete 2>/dev/null\nexit 0`},
+  {cat:'utility',title:'Debug Any Hook (Wrapper)',desc:'Hook silently fails. No error, no output.',trigger:'Any',matcher:'Any',code:`# Wraps any hook to log I/O and timing\n# npx cc-safe-setup --install-example hook-debug-wrapper`},
+  {cat:'detect',title:'Break Command Loops',desc:'Claude repeats same command 5+ times',trigger:'PreToolUse',matcher:'Bash',code:`COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)\n[ -z "$COMMAND" ] && exit 0\nSTATE="/tmp/cc-loop-history"\nNORM=$(echo "$COMMAND" | sed 's/[[:space:]]\\+/ /g')\necho "$NORM" >> "$STATE"\ntail -n 10 "$STATE" > "\${STATE}.tmp" && mv "\${STATE}.tmp" "$STATE"\nCOUNT=$(grep -cF "$NORM" "$STATE" || echo 0)\n[ "$COUNT" -ge 5 ] && echo "BLOCKED: Repeated $COUNT times" >&2 && exit 2\n[ "$COUNT" -ge 3 ] && echo "WARNING: Repeated $COUNT times" >&2\nexit 0`},
+  {cat:'utility',title:'Session Handoff',desc:'Auto-save state for next session after /compact',trigger:'Stop',matcher:'',code:`# Captures git state, recent blocks, errors\n# npx cc-safe-setup --install-example session-handoff`},
+  {cat:'detect',title:'Mega-Commit Guard',desc:'50+ files in one commit = unreviable',trigger:'PreToolUse',matcher:'Bash',code:`COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)\n[ -z "$COMMAND" ] && exit 0\necho "$COMMAND" | grep -qE '^\\s*git\\s+(commit|add\\s+(-A|--all|\\.))' || exit 0\n[ -d .git ] || exit 0\nCOUNT=$(($(git diff --name-only HEAD 2>/dev/null | wc -l) + $(git diff --cached --name-only 2>/dev/null | wc -l)))\n[ "$COUNT" -ge 50 ] && echo "BLOCKED: $COUNT files" >&2 && exit 2\n[ "$COUNT" -ge 10 ] && echo "WARNING: $COUNT files" >&2\nexit 0`},
+];
+
+const el = document.getElementById('recipes');
+const countEl = document.getElementById('count');
+const searchEl = document.getElementById('search');
+
+function render(filter, search) {
+  const filtered = RECIPES.filter(r => {
+    if (filter !== 'all' && r.cat !== filter) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      return r.title.toLowerCase().includes(s) || r.desc.toLowerCase().includes(s) || (r.code||'').toLowerCase().includes(s);
+    }
+    return true;
+  });
+
+  countEl.textContent = filtered.length + ' recipe' + (filtered.length !== 1 ? 's' : '');
+
+  el.innerHTML = filtered.map((r, i) => `
+    <div class="recipe" data-idx="${i}">
+      <div class="recipe-header" onclick="toggle(this)">
+        <span class="recipe-title">${r.title}</span>
+        <span class="recipe-meta"><span class="trigger">${r.trigger}</span> ${r.issue ? '<a href="https://github.com/anthropics/claude-code/issues/'+r.issue.replace('#','')+'">' + r.issue + '</a>' : ''}</span>
+      </div>
+      <div class="recipe-body">
+        <div class="recipe-desc">${r.desc}${r.matcher ? ' · Matcher: '+r.matcher : ''}</div>
+        <pre><button class="copy" onclick="copyCode(this)">Copy</button>${escHtml(r.code||'')}</pre>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggle(header) {
+  header.nextElementSibling.classList.toggle('open');
+}
+
+function copyCode(btn) {
+  const code = btn.parentElement.textContent.replace('Copy','').trim();
+  navigator.clipboard.writeText('#!/bin/bash\n' + code);
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy', 1500);
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+let currentFilter = 'all';
+document.querySelectorAll('.filter').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.cat;
+    render(currentFilter, searchEl.value);
+  });
+});
+
+searchEl.addEventListener('input', () => render(currentFilter, searchEl.value));
+render('all', '');
+</script>
+</body>
+</html>
