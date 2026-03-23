@@ -431,3 +431,45 @@ fi
 exit 0
 ```
 **Trigger:** PreToolUse, Matcher: `Edit|Write`
+
+## Case-Insensitive Filesystem Guard
+
+**Problem:** On exFAT/NTFS/HFS+ (case-insensitive), `mkdir Content` silently uses existing `content/`, then `rm -rf content` destroys everything ([#37875](https://github.com/anthropics/claude-code/issues/37875))
+
+```bash
+#!/bin/bash
+COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)
+[[ -z "$COMMAND" ]] && exit 0
+echo "$COMMAND" | grep -qE '^\s*(mkdir|rm)\s' || exit 0
+
+# Extract target path
+TARGET=""
+echo "$COMMAND" | grep -qE '^\s*mkdir' && TARGET=$(echo "$COMMAND" | grep -oP 'mkdir\s+(-p\s+)?\K\S+' | tail -1)
+echo "$COMMAND" | grep -qE '^\s*rm\s' && TARGET=$(echo "$COMMAND" | grep -oP 'rm\s+(-[rf]+\s+)*\K\S+' | tail -1)
+[[ -z "$TARGET" ]] && exit 0
+
+PARENT=$(dirname "$TARGET" 2>/dev/null)
+BASE=$(basename "$TARGET" 2>/dev/null)
+[[ ! -d "$PARENT" ]] && exit 0
+
+# Test if filesystem is case-insensitive
+TEST_FILE="${PARENT}/.cc_case_test_$$"
+touch "$TEST_FILE" 2>/dev/null || exit 0
+if [[ -f "${PARENT}/.CC_CASE_TEST_$$" ]]; then
+    rm -f "$TEST_FILE"
+    # Case-insensitive FS — check for collisions
+    BASE_LOWER=$(echo "$BASE" | tr '[:upper:]' '[:lower:]')
+    while IFS= read -r entry; do
+        ENTRY_LOWER=$(echo "$entry" | tr '[:upper:]' '[:lower:]')
+        if [[ "$ENTRY_LOWER" == "$BASE_LOWER" ]] && [[ "$entry" != "$BASE" ]]; then
+            echo "BLOCKED: Case collision on case-insensitive filesystem." >&2
+            echo "'$BASE' and '$entry' resolve to the SAME path on this drive." >&2
+            exit 2
+        fi
+    done < <(ls -1 "$PARENT" 2>/dev/null)
+else
+    rm -f "$TEST_FILE"
+fi
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: `Bash`
