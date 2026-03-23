@@ -500,3 +500,15 @@ fi
 exit 0
 ```
 **Trigger:** PreToolUse, Matcher: `Bash`
+
+## Clean Up /tmp/claude-*-cwd Files
+
+**Problem:** Claude Code creates `/tmp/claude-{hex}-cwd` files but never deletes them. Hundreds accumulate per day. ([#8856](https://github.com/anthropics/claude-code/issues/8856) 67r, 102 comments)
+
+```bash
+#!/bin/bash
+# Runs on session end — cleans files older than 60 minutes
+find /tmp -maxdepth 1 -name 'claude-*-cwd' -type f -mmin +60 -delete 2>/dev/null
+exit 0
+```
+**Trigger:** Stop, Matcher: `""` (empty)
