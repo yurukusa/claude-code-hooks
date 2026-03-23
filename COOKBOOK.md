@@ -534,3 +534,22 @@ MS=$(($(($(date +%s%N)/1000000))-START))
 cat "$STDOUT"; cat "$STDERR" >&2; rm -f "$STDOUT" "$STDERR"; exit $EC
 ```
 **Usage:** Change hook command to `hook-debug-wrapper.sh ~/.claude/hooks/your-hook.sh`
+
+## Break Command Repetition Loops
+
+**Problem:** Claude gets stuck running the same command (or cycle) repeatedly, wasting context window and time.
+
+```bash
+#!/bin/bash
+COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)
+[ -z "$COMMAND" ] && exit 0
+STATE="/tmp/cc-loop-history"
+NORM=$(echo "$COMMAND" | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//')
+echo "$NORM" >> "$STATE"
+tail -n 10 "$STATE" > "${STATE}.tmp" && mv "${STATE}.tmp" "$STATE"
+COUNT=$(grep -cF "$NORM" "$STATE" 2>/dev/null || echo 0)
+[ "$COUNT" -ge 5 ] && echo "BLOCKED: Repeated $COUNT times. Try a different approach." >&2 && exit 2
+[ "$COUNT" -ge 3 ] && echo "WARNING: Command repeated $COUNT times." >&2
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: `Bash`
