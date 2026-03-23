@@ -553,3 +553,19 @@ COUNT=$(grep -cF "$NORM" "$STATE" 2>/dev/null || echo 0)
 exit 0
 ```
 **Trigger:** PreToolUse, Matcher: `Bash`
+**Problem:** After `/compact` or session restart, Claude forgets what it was doing.
+```bash
+HANDOFF="${CC_HANDOFF_FILE:-$HOME/.claude/session-handoff.md}"
+{
+    echo "# Session Handoff"
+    echo "**Ended:** $(date -Iseconds)"
+    if [ -d ".git" ]; then
+        echo "**Branch:** $(git branch --show-current 2>/dev/null)"
+        echo "**Last commit:** $(git log --oneline -1 2>/dev/null)"
+        CHANGES=$(git diff --name-only 2>/dev/null | head -5)
+        [ -n "$CHANGES" ] && echo '```' && echo "$CHANGES" && echo '```'
+    fi
+} > "$HANDOFF"
+exit 0
+```
+**Trigger:** Stop, Matcher: `""` (empty)
