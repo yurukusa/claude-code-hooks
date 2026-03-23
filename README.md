@@ -41,12 +41,15 @@ Covers **18 of 20 checks** in [cc-health-check](https://github.com/yurukusa/cc-h
 ### Get Started in 10 Seconds
 
 ```bash
-npx cc-safe-setup          # Install 7 essential hooks (free)
-npx cc-safe-setup --dry-run # Preview what gets installed
-npx cc-safe-setup --uninstall # Clean removal
+npx cc-safe-setup            # Install 8 essential hooks
+npx cc-safe-setup --verify   # Test each hook works
+npx cc-safe-setup --doctor   # Diagnose any issues
+npx cc-safe-setup --create "block npm publish without tests"  # Generate custom hooks
 ```
 
-> **Want all 16 hooks + templates?** Clone this repo. Or get the [Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit) (pay what you want) with install.sh + 3 exclusive tools.
+> **Want all 16 hooks + templates?** Clone this repo. Or get the [Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit) with install.sh + 3 exclusive tools.
+>
+> **New to hooks?** Read the [Troubleshooting Guide](https://github.com/yurukusa/cc-safe-setup/blob/main/TROUBLESHOOTING.md) or print the [Cheat Sheet](https://yurukusa.github.io/cc-safe-setup/cheatsheet.html).
 
 ---
 
