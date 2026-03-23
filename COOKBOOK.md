@@ -512,3 +512,25 @@ find /tmp -maxdepth 1 -name 'claude-*-cwd' -type f -mmin +60 -delete 2>/dev/null
 exit 0
 ```
 **Trigger:** Stop, Matcher: `""` (empty)
+
+## Debug Any Hook (Wrapper)
+
+**Problem:** Hook silently fails. No error, no output, nothing in logs. What went wrong?
+
+```bash
+#!/bin/bash
+# Wrap any hook: hook-debug-wrapper.sh <actual-hook.sh>
+HOOK="$1"; INPUT=$(cat)
+START=$(($(date +%s%N)/1000000))
+STDOUT=$(mktemp); STDERR=$(mktemp)
+echo "$INPUT" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"; EC=$?
+MS=$(($(($(date +%s%N)/1000000))-START))
+{
+  echo "=== $(date -Iseconds) $(basename "$HOOK") exit:$EC ${MS}ms ==="
+  [ -s "$STDERR" ] && echo "err: $(head -c 200 "$STDERR")"
+  [ -s "$STDOUT" ] && echo "out: $(head -c 200 "$STDOUT")"
+  echo "in: $(echo "$INPUT" | head -c 300)"
+} >> ~/.claude/hook-debug.log
+cat "$STDOUT"; cat "$STDERR" >&2; rm -f "$STDOUT" "$STDERR"; exit $EC
+```
+**Usage:** Change hook command to `hook-debug-wrapper.sh ~/.claude/hooks/your-hook.sh`
