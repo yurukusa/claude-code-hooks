@@ -473,3 +473,30 @@ fi
 exit 0
 ```
 **Trigger:** PreToolUse, Matcher: `Bash`
+
+## Auto-Approve Safe Compound Commands
+
+**Problem:** `Bash(git:*)` doesn't match `cd /path && git log`. Permission prompts fire on every compound command. ([#30519](https://github.com/anthropics/claude-code/issues/30519) 53r, [#16561](https://github.com/anthropics/claude-code/issues/16561) 101r)
+
+```bash
+#!/bin/bash
+COMMAND=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)
+[[ -z "$COMMAND" ]] && exit 0
+echo "$COMMAND" | grep -qE '&&|\|\||;' || exit 0
+
+# Split and check each component
+ALL_SAFE=1
+while IFS= read -r part; do
+    part=$(echo "$part" | sed 's/^\s*//; s/\s*$//')
+    [[ -z "$part" ]] && continue
+    if ! echo "$part" | grep -qE '^\s*(cd|ls|pwd|echo|cat|head|tail|wc|sort|grep|find|test|true|mkdir\s+-p)\s|^\s*git\s+(status|log|diff|branch|show|rev-parse|tag|add|commit)\s|^\s*(npm|yarn|pnpm)\s+(test|run|list|audit)\s|^\s*(python3?|pytest|cargo|go|make)\s+(test|build|check)\s'; then
+        ALL_SAFE=0; break
+    fi
+done < <(echo "$COMMAND" | sed 's/&&/\n/g; s/||/\n/g; s/;/\n/g')
+
+if [ "$ALL_SAFE" = 1 ]; then
+    jq -n '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":"compound command auto-approved"}}'
+fi
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: `Bash`
