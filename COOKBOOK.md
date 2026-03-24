@@ -598,3 +598,15 @@ done | head -3)
 exit 0
 ```
 **Trigger:** PreToolUse, Matcher: `Bash`
+**Problem:** Claude Code sometimes modifies CLAUDE.md or settings.json without permission.
+```bash
+FILE=$(cat | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+[ -z "$FILE" ] && exit 0
+case "$(basename "$FILE")" in
+    CLAUDE.md|settings.json|settings.local.json)
+        echo "BLOCKED: Cannot modify config file: $FILE" >&2
+        exit 2 ;;
+esac
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: `Edit|Write`
