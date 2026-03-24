@@ -3,7 +3,9 @@
 [![GitHub stars](https://img.shields.io/github/stars/yurukusa/claude-code-hooks?style=social)](https://github.com/yurukusa/claude-code-hooks)
 [![tests](https://github.com/yurukusa/claude-code-hooks/actions/workflows/test.yml/badge.svg)](https://github.com/yurukusa/claude-code-hooks/actions/workflows/test.yml)
 
-**[Interactive Cookbook](https://yurukusa.github.io/claude-code-hooks/)** — search, filter, and copy 25 hook recipes in your browser.
+**[Interactive Cookbook](https://yurukusa.github.io/claude-code-hooks/)** — search, filter, and copy 26 hook recipes in your browser.
+
+**Find & install hooks:** `npx cc-hook-registry init` — auto-detect your project and install recommended hooks.
 
 **16 hooks + 5 templates from 160+ hours of autonomous Claude Code operation.**
 
