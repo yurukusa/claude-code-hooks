@@ -583,3 +583,18 @@ COUNT=$((TOTAL + STAGED))
 exit 0
 ```
 **Trigger:** PreToolUse, Matcher: `Bash`
+**Problem:** rm -rf follows symlinks/junctions and deletes data outside the target. C:\Users deleted via NTFS junction (#36339, 93r).
+```bash
+CMD=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)
+[ -z "$CMD" ] && exit 0
+echo "$CMD" | grep -qE '^\s*rm\s+.*-[rf]' || exit 0
+TARGET=$(echo "$CMD" | grep -oP 'rm\s+(-[rf]+\s+)*\K\S+' | tail -1)
+[ -z "$TARGET" ] || [ ! -d "$TARGET" ] && exit 0
+LINKS=$(find "$TARGET" -maxdepth 3 -type l 2>/dev/null | while read l; do
+    R=$(readlink -f "$l" 2>/dev/null)
+    [[ "$R" != "$(pwd)"* ]] && echo "$l -> $R"
+done | head -3)
+[ -n "$LINKS" ] && echo "BLOCKED: symlinks pointing outside project" >&2 && exit 2
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: `Bash`
