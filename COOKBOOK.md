@@ -610,3 +610,21 @@ esac
 exit 0
 ```
 **Trigger:** PreToolUse, Matcher: `Edit|Write`
+**Problem:** "Don't deploy on Friday" — every ops team ever.
+```bash
+CMD=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)
+[ -z "$CMD" ] && exit 0
+[ "$(date +%u)" = "5" ] && echo "$CMD" | grep -qiE 'deploy|vercel|netlify' && \
+    echo "BLOCKED: No deploys on Friday." >&2 && exit 2
+exit 0
+```
+**Trigger:** PreToolUse, Matcher: `Bash`
+**Problem:** Tool output consuming 50K+ chars of context.
+```bash
+INPUT=$(cat)
+OUTPUT=$(echo "$INPUT" | jq -r '.tool_result // empty' 2>/dev/null)
+[ -n "$OUTPUT" ] && [ ${#OUTPUT} -gt 50000 ] && \
+    echo "WARNING: Output is ${#OUTPUT} chars. Use head/tail/grep." >&2
+exit 0
+```
+**Trigger:** PostToolUse, Matcher: `""` (empty)
