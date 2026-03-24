@@ -80,6 +80,9 @@ const RECIPES = [
   {cat:'block',title:'Symlink Traversal Guard',desc:'Detect symlinks pointing outside project in rm targets (#36339)',trigger:'PreToolUse',matcher:'Bash',code:`# Checks rm targets for symlinks pointing outside project\n# npx cc-safe-setup --install-example symlink-guard`},
   {cat:'block',title:'Block .env Sourcing',desc:'Prevent sourcing .env into shell environment (#401)',trigger:'PreToolUse',matcher:'Bash',code:`CMD=$(cat|jq -r '.tool_input.command // empty' 2>/dev/null)\n[ -z "$CMD" ] && exit 0\necho "$CMD"|grep -qE '(source|\\.)\\s+\\.env' && echo "BLOCKED: sourcing .env" >&2 && exit 2\nexit 0`},
   {cat:'utility',title:'Re-inject CLAUDE.md',desc:'Remind rules after compaction (#6354)',trigger:'SessionStart',matcher:'',code:`# Reads CLAUDE.md and outputs key rules as reminder\n# npx cc-safe-setup --install-example reinject-claudemd`},
+  {cat:'block',title:'No Deploy Friday',desc:'Block deploys on Fridays',trigger:'PreToolUse',matcher:'Bash',code:`CMD=$(cat|jq -r '.tool_input.command // empty' 2>/dev/null)\n[ -z "$CMD" ] && exit 0\n[ "$(date +%u)" = "5" ] && echo "$CMD"|grep -qiE 'deploy|vercel' && echo "BLOCKED: No deploys on Friday" >&2 && exit 2\nexit 0`},
+  {cat:'block',title:'Protect CLAUDE.md',desc:'Block AI editing its own config files',trigger:'PreToolUse',matcher:'Edit|Write',code:`FILE=$(cat|jq -r '.tool_input.file_path // empty' 2>/dev/null)\n[ -z "$FILE" ] && exit 0\ncase "$(basename "$FILE")" in CLAUDE.md|settings.json) echo "BLOCKED" >&2; exit 2;; esac\nexit 0`},
+  {cat:'detect',title:'Output Length Guard',desc:'Warn on large tool output consuming context',trigger:'PostToolUse',matcher:'',code:`OUTPUT=$(cat|jq -r '.tool_result // empty' 2>/dev/null)\n[ -n "$OUTPUT" ] && [ \${#OUTPUT} -gt 50000 ] && echo "WARNING: Output \${#OUTPUT} chars" >&2\nexit 0`},
 ];
 
 const el = document.getElementById('recipes');
