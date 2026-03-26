@@ -365,7 +365,7 @@ Run cc-health-check first to see your score, then use this kit to fix what's mis
 
 ## Want it all set up in 15 minutes?
 
-**[Claude Code Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit)** ($19) — Everything above, pre-configured and ready to deploy:
+**[Claude Code Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit)** (Pay What You Want) — Everything above, pre-configured and ready to deploy:
 
 - All 16 hooks, pre-configured with `install.sh`
 - **5 templates** (CLAUDE.md baseline + autonomous, DoD checklists, task-queue, mission, LESSONS)
