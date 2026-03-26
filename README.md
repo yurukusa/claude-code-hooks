@@ -7,7 +7,7 @@
 
 **Find & install hooks:** `npx cc-hook-registry init` — auto-detect your project and install recommended hooks.
 
-**16 hooks + 6 templates from 160+ hours of autonomous Claude Code operation.**
+**16 hooks + 6 templates from 700+ hours of autonomous Claude Code operation.**
 
 ```
 ┌─────────────────────────────────────────────────────────┐
