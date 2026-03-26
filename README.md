@@ -378,6 +378,8 @@ Run cc-health-check first to see your score, then use this kit to fix what's mis
 
 **New to hooks?** See the [Migration Guide](https://github.com/yurukusa/cc-safe-setup/blob/main/MIGRATION.md) — step-by-step from permissions-only to permissions + hooks.
 
+📘 **Want the full story?** [Production guide from 700+ hours of autonomous operation](https://zenn.dev/yurukusa/books/6076c23b1cb18b) — everything that broke, and how we fixed it.
+
 If these hooks saved you from a bad day, consider giving this repo a ⭐ — it helps others find it.
 
 ## License
