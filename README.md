@@ -7,7 +7,7 @@
 
 **Find & install hooks:** `npx cc-hook-registry init` — auto-detect your project and install recommended hooks.
 
-**16 hooks + 5 templates from 160+ hours of autonomous Claude Code operation.**
+**16 hooks + 6 templates from 160+ hours of autonomous Claude Code operation.**
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -51,7 +51,7 @@ npx cc-safe-setup --doctor   # Diagnose any issues
 npx cc-safe-setup --create "block npm publish without tests"  # Generate custom hooks
 ```
 
-> **Want all 16 hooks + templates?** Clone this repo. Or get the [Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit) with install.sh + 3 exclusive tools.
+> **Want all 16 hooks + templates?** Clone this repo. Or get the [Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit) with install.sh + 3 exclusive tools (pay what you want).
 >
 > **New to hooks?** Read the [Troubleshooting Guide](https://github.com/yurukusa/cc-safe-setup/blob/main/TROUBLESHOOTING.md) or print the [Cheat Sheet](https://yurukusa.github.io/cc-safe-setup/cheatsheet.html).
 
@@ -368,7 +368,7 @@ Run cc-health-check first to see your score, then use this kit to fix what's mis
 **[Claude Code Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit)** (Pay What You Want) — Everything above, pre-configured and ready to deploy:
 
 - All 16 hooks, pre-configured with `install.sh`
-- **5 templates** (CLAUDE.md baseline + autonomous, DoD checklists, task-queue, mission, LESSONS)
+- **6 templates** (CLAUDE.md baseline + autonomous, DoD checklists, task-queue, mission, LESSONS)
 - **3 exclusive tools** (watchdog, CLAUDE.md generator, risk-score)
 - 3 settings.json presets (minimal / standard / autonomous)
 
