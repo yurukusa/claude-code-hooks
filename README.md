@@ -380,6 +380,10 @@ Run cc-health-check first to see your score, then use this kit to fix what's mis
 
 📘 **Want the full story?** [Production guide from 700+ hours of autonomous operation](https://zenn.dev/yurukusa/books/6076c23b1cb18b) — everything that broke, and how we fixed it.
 
+📰 **Popular articles:**
+- [Skills Guide deep-dive (19K+ views)](https://qiita.com/yurukusa/items/f69920b4a02cf7e2988c) — Anthropic's official Skills PDF analyzed
+- [108 hours running unattended](https://qiita.com/yurukusa/items/3b2f9cf4d1eb7f7a54c5) — every incident and the safety hooks that came from them
+
 If these hooks saved you from a bad day, consider giving this repo a ⭐ — it helps others find it.
 
 ## License
