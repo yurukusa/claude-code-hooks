@@ -1,11 +1,25 @@
 # claude-code-hooks
 
-[![GitHub stars](https://img.shields.io/github/stars/yurukusa/claude-code-hooks?style=social)](https://github.com/yurukusa/claude-code-hooks)
-[![tests](https://github.com/yurukusa/claude-code-hooks/actions/workflows/test.yml/badge.svg)](https://github.com/yurukusa/claude-code-hooks/actions/workflows/test.yml)
+> **⚠️ This repository has moved to [cc-safe-setup](https://github.com/yurukusa/cc-safe-setup)** — 677 hooks, 9,200+ tests, one-command install. This repo (16 hooks) is the original version kept for backward compatibility.
+
+[![GitHub stars](https://img.shields.io/github/stars/yurukusa/cc-safe-setup?style=social)](https://github.com/yurukusa/cc-safe-setup)
+
+## Quick Start (New Repository)
+
+```bash
+npx cc-safe-setup            # Install 8 essential hooks in 10 seconds
+npx cc-safe-setup --verify   # Test each hook works
+```
+
+**[677 Example Hooks](https://github.com/yurukusa/cc-safe-setup/tree/main/examples)** | **[Interactive Hook Selector](https://yurukusa.github.io/cc-safe-setup/hook-selector.html)** | **[Token Checkup](https://yurukusa.github.io/cc-safe-setup/token-checkup.html)** (diagnose token waste)
+
+**Spending too much on Claude Code?** The average developer spends [$13/day on tokens](https://code.claude.com/docs/en/costs). Our [Token Book](https://zenn.dev/yurukusa/books/token-savings-guide) shows how to cut that in half with real data from 800+ hours of operation.
+
+---
+
+## Original Repository (16 hooks)
 
 **[Interactive Cookbook](https://yurukusa.github.io/claude-code-hooks/)** — search, filter, and copy 26 hook recipes in your browser.
-
-**Find & install hooks:** `npx cc-hook-registry init` — auto-detect your project and install recommended hooks.
 
 **16 hooks + 6 templates from 700+ hours of autonomous Claude Code operation.**
 
@@ -51,9 +65,11 @@ npx cc-safe-setup --doctor   # Diagnose any issues
 npx cc-safe-setup --create "block npm publish without tests"  # Generate custom hooks
 ```
 
-> **Want all 16 hooks + templates?** Clone this repo. Or get the [Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit) with install.sh + 3 exclusive tools (pay what you want).
+> **Want 677 hooks?** Use [cc-safe-setup](https://github.com/yurukusa/cc-safe-setup) — the successor to this repo with 40x more hooks, comprehensive tests, and one-command install.
 >
 > **New to hooks?** Read the [Troubleshooting Guide](https://github.com/yurukusa/cc-safe-setup/blob/main/TROUBLESHOOTING.md) or print the [Cheat Sheet](https://yurukusa.github.io/cc-safe-setup/cheatsheet.html).
+>
+> **Losing tokens too fast?** [Token Book](https://zenn.dev/yurukusa/books/token-savings-guide) — real optimization data from 800+ hours (¥2,500, Chapter 1 free).
 
 ---
 
