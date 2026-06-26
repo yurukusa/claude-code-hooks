@@ -68,6 +68,12 @@ if echo "$COMMAND" | grep -Eq '(gh[pousr]|ghu)_[A-Za-z0-9]{20,}|github_pat_[A-Za
     block "command text contains a literal credential/token."
 fi
 
+# git credential helpers legitimately feed the secret to git's credential
+# protocol on stdin (e.g. credential.helper='!f(){ echo "password=$(pass X)"; }'),
+# NOT to the transcript. Past the literal-token check above, don't flag the
+# echo/read inside a helper definition.
+echo "$COMMAND" | grep -Eq 'credential\.helper' && exit 0
+
 # 2) Credential-read substitution fed to a command that prints to stdout.
 if echo "$COMMAND" | grep -Eq '\b(echo|printf|print|cat|tee|head|tail|xxd|od|base64|hexdump)\b[^|;&]*(\$\(|`)[^)`]*('"$READ"')'; then
     block "a secret read is piped into a command that prints to stdout."
