@@ -1,6 +1,6 @@
 # claude-code-hooks
 
-> **⚠️ This repository has moved to [cc-safe-setup](https://github.com/yurukusa/cc-safe-setup)** — 677 hooks, 9,200+ tests, one-command install. This repo (16 hooks) is the original version kept for backward compatibility.
+> **⚠️ This repository has moved to [cc-safe-setup](https://github.com/yurukusa/cc-safe-setup)** — 677 hooks, 9,200+ tests, one-command install. This repo (17 hooks) is the original version kept for backward compatibility.
 
 [![GitHub stars](https://img.shields.io/github/stars/yurukusa/cc-safe-setup?style=social)](https://github.com/yurukusa/cc-safe-setup)
 
@@ -17,11 +17,11 @@ npx cc-safe-setup --verify   # Test each hook works
 
 ---
 
-## Original Repository (16 hooks)
+## Original Repository (17 hooks)
 
 **[Interactive Cookbook](https://yurukusa.github.io/claude-code-hooks/)** — search, filter, and copy 26 hook recipes in your browser.
 
-**16 hooks + 6 templates from 700+ hours of autonomous Claude Code operation.**
+**17 hooks + 6 templates from 700+ hours of autonomous Claude Code operation.**
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -75,7 +75,7 @@ npx cc-safe-setup --create "block npm publish without tests"  # Generate custom 
 
 ## What's Included
 
-### Hooks (16)
+### Hooks (17)
 
 | Hook | Purpose | Trigger |
 |------|---------|---------|
@@ -91,6 +91,7 @@ npx cc-safe-setup --create "block npm publish without tests"  # Generate custom 
 | `error-gate.sh` | Blocks external actions (push, publish, POST) when unresolved errors exist | PreToolUse (Bash) |
 | `destructive-guard.sh` | Blocks rm -rf on sensitive paths, git reset --hard, git clean. Prevents NTFS junction traversal data loss | PreToolUse (Bash) |
 | `secret-guard.sh` | Blocks git add .env, credential files, git add . with .env present | PreToolUse (Bash) |
+| `secret-output-guard.sh` | Blocks credential VALUES from reaching stdout/transcript (`pass show \| head`, `gh auth token`, `echo $(pass show …)`, literal `ghp_`/`glpat-`/`AKIA…` tokens). Complements secret-guard.sh | PreToolUse (Bash) |
 | `comment-strip.sh` | Strips bash comments that break permission allowlists ([#29582](https://github.com/anthropics/claude-code/issues/29582)) | PreToolUse (Bash) |
 | `cd-git-allow.sh` | Auto-approves read-only cd+git compounds ([#32985](https://github.com/anthropics/claude-code/issues/32985)) | PreToolUse (Bash) |
 | `auto-approve-readonly.sh` | Auto-approves read-only commands (git log, ls, cat) via PermissionRequest | PermissionRequest |
@@ -383,7 +384,7 @@ Run cc-health-check first to see your score, then use this kit to fix what's mis
 
 **[Claude Code Ops Kit](https://yurukusa.github.io/cc-ops-kit-landing/?utm_source=github&utm_medium=readme&utm_campaign=ops-kit)** (Pay What You Want) — Everything above, pre-configured and ready to deploy:
 
-- All 16 hooks, pre-configured with `install.sh`
+- All 17 hooks, pre-configured with `install.sh`
 - **6 templates** (CLAUDE.md baseline + autonomous, DoD checklists, task-queue, mission, LESSONS)
 - **3 exclusive tools** (watchdog, CLAUDE.md generator, risk-score)
 - 3 settings.json presets (minimal / standard / autonomous)

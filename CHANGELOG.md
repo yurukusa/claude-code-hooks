@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- **secret-output-guard**: new PreToolUse(Bash) hook blocking credential VALUES from reaching stdout/the transcript — `pass show | head`, `gh auth token`, `echo $(pass show …)`, and literal `ghp_`/`github_pat_`/`glpat-`/`xoxb-`/`AKIA…`/PEM tokens. Complements `secret-guard.sh` (which only guards `git add`). Allows safe forms (`TOK=$(pass show X)`, `>/dev/null`, `pass insert`, token piped into a request header); audited bypass `CC_SECRET_OUTPUT_OK=1`.
+- hooks.json: 16→17 entries
+
 ## 2026-03-21 (13 commits)
 - **COOKBOOK.md**: 8 recipes + "How to Write" guide from 34 GitHub Issue responses
 - **secret-guard**: blocks git add .env / credentials
