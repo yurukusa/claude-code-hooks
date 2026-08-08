@@ -374,7 +374,7 @@ Install any example: `npx github:yurukusa/cc-safe-setup --install-example <name>
 | [cc-health-check](https://github.com/yurukusa/cc-health-check) | Diagnose your setup — find what's missing |
 | [cc-session-stats](https://github.com/yurukusa/cc-session-stats) | How much are you using AI? |
 | [cc-audit-log](https://github.com/yurukusa/cc-audit-log) | What did your AI do? |
-| [cc-roast](https://yurukusa.github.io/cc-roast/) | Your CLAUDE.md, brutally reviewed |
+| [CLAUDE.md Analyzer](https://yurukusa.github.io/cc-safe-setup/claudemd-analyzer.html) | Your CLAUDE.md, brutally reviewed |
 | **claude-code-hooks** | Fix what's missing — hooks and templates |
 
 Run cc-health-check first to see your score, then use this kit to fix what's missing.
