@@ -1,17 +1,19 @@
 # claude-code-hooks
 
-> **⚠️ This repository has moved to [cc-safe-setup](https://github.com/yurukusa/cc-safe-setup)** — 677 hooks, 9,200+ tests, one-command install. This repo (16 hooks) is the original version kept for backward compatibility.
+> **⚠️ This repository has moved to [cc-safe-setup](https://github.com/yurukusa/cc-safe-setup)** — 910 hooks, one-command install. This repo (16 hooks) is the original version kept for backward compatibility.
 
 [![GitHub stars](https://img.shields.io/github/stars/yurukusa/cc-safe-setup?style=social)](https://github.com/yurukusa/cc-safe-setup)
 
 ## Quick Start (New Repository)
 
+> The published package on npm is still the 2026-04-20 build. The commands below point at GitHub directly so you get the current version.
+
 ```bash
-npx cc-safe-setup            # Install 8 essential hooks in 10 seconds
-npx cc-safe-setup --verify   # Test each hook works
+npx github:yurukusa/cc-safe-setup            # Install 8 essential hooks in 10 seconds
+npx github:yurukusa/cc-safe-setup --verify   # Test each hook works
 ```
 
-**[677 Example Hooks](https://github.com/yurukusa/cc-safe-setup/tree/main/examples)** | **[Interactive Hook Selector](https://yurukusa.github.io/cc-safe-setup/hook-selector.html)** | **[Token Checkup](https://yurukusa.github.io/cc-safe-setup/token-checkup.html)** (diagnose token waste)
+**[910 Example Hooks](https://github.com/yurukusa/cc-safe-setup/tree/main/examples)** | **[Interactive Hook Selector](https://yurukusa.github.io/cc-safe-setup/hook-selector.html)** | **[Token Checkup](https://yurukusa.github.io/cc-safe-setup/token-checkup.html)** (diagnose token waste)
 
 **Spending too much on Claude Code?** The average developer spends [$13/day on tokens](https://code.claude.com/docs/en/costs). Our [Token Book](https://zenn.dev/yurukusa/books/token-savings-guide) shows how to cut that in half with real data from 800+ hours of operation.
 
@@ -59,13 +61,13 @@ Covers **18 of 20 checks** in [cc-health-check](https://github.com/yurukusa/cc-h
 ### Get Started in 10 Seconds
 
 ```bash
-npx cc-safe-setup            # Install 8 essential hooks
-npx cc-safe-setup --verify   # Test each hook works
-npx cc-safe-setup --doctor   # Diagnose any issues
-npx cc-safe-setup --create "block npm publish without tests"  # Generate custom hooks
+npx github:yurukusa/cc-safe-setup            # Install 8 essential hooks
+npx github:yurukusa/cc-safe-setup --verify   # Test each hook works
+npx github:yurukusa/cc-safe-setup --doctor   # Diagnose any issues
+npx github:yurukusa/cc-safe-setup --create "block npm publish without tests"  # Generate custom hooks
 ```
 
-> **Want 677 hooks?** Use [cc-safe-setup](https://github.com/yurukusa/cc-safe-setup) — the successor to this repo with 40x more hooks, comprehensive tests, and one-command install.
+> **Want 910 hooks?** Use [cc-safe-setup](https://github.com/yurukusa/cc-safe-setup) — the successor to this repo with 57x more hooks, a test suite, and one-command install.
 >
 > **New to hooks?** Read the [Troubleshooting Guide](https://github.com/yurukusa/cc-safe-setup/blob/main/TROUBLESHOOTING.md) or print the [Cheat Sheet](https://yurukusa.github.io/cc-safe-setup/cheatsheet.html).
 >
@@ -151,7 +153,7 @@ How the kit maps to [cc-health-check](https://github.com/yurukusa/cc-health-chec
 ### Option A: Quick Install (Recommended)
 
 ```bash
-npx cc-safe-setup
+npx github:yurukusa/cc-safe-setup
 ```
 
 Installs 8 essential hooks in 10 seconds. Zero config. [Details](https://github.com/yurukusa/cc-safe-setup)
@@ -159,8 +161,8 @@ Installs 8 essential hooks in 10 seconds. Zero config. [Details](https://github.
 **After install, verify hooks are working:**
 
 ```bash
-npx cc-safe-setup --verify   # Test each hook with sample inputs
-npx cc-safe-setup --status   # Check which hooks are installed
+npx github:yurukusa/cc-safe-setup --verify   # Test each hook with sample inputs
+npx github:yurukusa/cc-safe-setup --status   # Check which hooks are installed
 npx cc-health-check          # Full setup diagnostic (20 checks)
 ```
 
@@ -327,7 +329,7 @@ Real incidents from GitHub Issues, and the hooks that prevent them:
 | Prompt injection exfiltrated data via curl POST | [#37420](https://github.com/anthropics/claude-code/issues/37420) | `network-guard` (example) |
 | CLAUDE.md memory rules ignored repeatedly | [#37314](https://github.com/anthropics/claude-code/issues/37314) | Use hooks instead of memory |
 
-Install any example: `npx cc-safe-setup --install-example <name>`
+Install any example: `npx github:yurukusa/cc-safe-setup --install-example <name>`
 
 ---
 
