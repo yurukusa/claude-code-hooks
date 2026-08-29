@@ -1,6 +1,6 @@
 # claude-code-hooks
 
-> **⚠️ This repository has moved to [cc-safe-setup](https://github.com/yurukusa/cc-safe-setup)** — 910 hooks, one-command install. This repo (16 hooks) is the original version kept for backward compatibility.
+> **⚠️ This repository has moved to [cc-safe-setup](https://github.com/yurukusa/cc-safe-setup)** — 914 hooks, one-command install. This repo (16 hooks) is the original version kept for backward compatibility.
 
 [![GitHub stars](https://img.shields.io/github/stars/yurukusa/cc-safe-setup?style=social)](https://github.com/yurukusa/cc-safe-setup)
 
@@ -13,9 +13,11 @@ npx github:yurukusa/cc-safe-setup            # Install 8 essential hooks in 10 s
 npx github:yurukusa/cc-safe-setup --verify   # Test each hook works
 ```
 
-**[910 Example Hooks](https://github.com/yurukusa/cc-safe-setup/tree/main/examples)** | **[Interactive Hook Selector](https://yurukusa.github.io/cc-safe-setup/hook-selector.html)** | **[Token Checkup](https://yurukusa.github.io/cc-safe-setup/token-checkup.html)** (diagnose token waste)
+**[914 Example Hooks](https://github.com/yurukusa/cc-safe-setup/tree/main/examples)** | **[Interactive Hook Selector](https://yurukusa.github.io/cc-safe-setup/hook-selector.html)** | **[Token Checkup](https://yurukusa.github.io/cc-safe-setup/token-checkup.html)** (diagnose token waste)
 
-**Spending too much on Claude Code?** The average developer spends [$13/day on tokens](https://code.claude.com/docs/en/costs). Our [Token Book](https://zenn.dev/yurukusa/books/token-savings-guide) shows how to cut that in half with real data from 800+ hours of operation.
+**New here?** [The Claude Code Safety Field Manual](https://leanpub.com/claude-code-safety-field-manual) is free (minimum price zero): the pre-flight checklist, what each guard actually refuses, and how to make one fire on purpose so you can watch it work.
+
+**Spending too much on Claude Code?** The average developer spends [$13/day on tokens](https://code.claude.com/docs/en/costs). [Cut Your Claude Code Token Usage in Half](https://leanpub.com/claude-code-token-savings) is 48 diagnostic symptoms for cost — subagents, MCP server overhead, context bloat, cache misses — measured on one operation rather than reasoned about (English, from $9.99).
 
 ---
 
@@ -67,11 +69,11 @@ npx github:yurukusa/cc-safe-setup --doctor   # Diagnose any issues
 npx github:yurukusa/cc-safe-setup --create "block npm publish without tests"  # Generate custom hooks
 ```
 
-> **Want 910 hooks?** Use [cc-safe-setup](https://github.com/yurukusa/cc-safe-setup) — the successor to this repo with 57x more hooks, a test suite, and one-command install.
+> **Want 914 hooks?** Use [cc-safe-setup](https://github.com/yurukusa/cc-safe-setup) — the successor to this repo with 57x more hooks, a test suite, and one-command install.
 >
 > **New to hooks?** Read the [Troubleshooting Guide](https://github.com/yurukusa/cc-safe-setup/blob/main/TROUBLESHOOTING.md) or print the [Cheat Sheet](https://yurukusa.github.io/cc-safe-setup/cheatsheet.html).
 >
-> **Losing tokens too fast?** [Token Book](https://zenn.dev/yurukusa/books/token-savings-guide) — real optimization data from 800+ hours (¥2,500, Chapter 1 free).
+> **Losing tokens too fast?** [Cut Your Claude Code Token Usage in Half](https://leanpub.com/claude-code-token-savings) — 48 diagnostic symptoms for cost, measured on one operation over 800+ hours (English, from $9.99, free sample). A longer Japanese book on the same subject (37 chapters) is [on Zenn](https://zenn.dev/yurukusa/books/token-savings-guide) — it is a separate book, not a translation.
 
 ---
 
@@ -396,7 +398,7 @@ Run cc-health-check first to see your score, then use this kit to fix what's mis
 
 **New to hooks?** See the [Migration Guide](https://github.com/yurukusa/cc-safe-setup/blob/main/MIGRATION.md) — step-by-step from permissions-only to permissions + hooks.
 
-📘 **Want the full story?** [Production guide from 700+ hours of autonomous operation](https://zenn.dev/yurukusa/books/6076c23b1cb18b) — everything that broke, and how we fixed it.
+📘 **Want the full story?** In English: [Claude Code Safety Mastery](https://leanpub.com/claude-code-safety-mastery) — the defensive hooks, eight dated incidents where the guard itself failed silently, and a 50-point audit (from $9.99, free sample). In Japanese, the longer incident log is [on Zenn](https://zenn.dev/yurukusa/books/6076c23b1cb18b).
 
 📰 **Popular articles:**
 - [Skills Guide deep-dive (19K+ views)](https://qiita.com/yurukusa/items/f69920b4a02cf7e2988c) — Anthropic's official Skills PDF analyzed
